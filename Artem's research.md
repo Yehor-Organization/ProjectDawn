@@ -1,1 +1,19 @@
-
+| #  | Idea Checklist |
+|----|----------------|
+| 1  | - [ ] My 1st idea for our android phone game is to make a Platformer Game that will be similar to the (Rayman Legends)/ (Rayman Origins) games and (Blasphemous)
+| 2  | - [ ] My 2nd idea for our android phone game is to make a Wave Clearing Hack and Slash Game similar to (Vampire Survivors), (Magic Survival), and (Halls of Torment)
+| 3  | - [ ] My 3rd idea for our android phone game is to make an Enraging Climbing Game similar to (Only Up) and (A Difficult Game About Climbing)
+| 4  | - [ ] My 4th idea for our android phone game is to make a Rythm Forging Game similar to (Jacksmith)
+| 5  | - [ ] My 5th idea for our android phone game is to make a Rougelike Game similar to (Shattered Pixel Dungeon) and (Soul Knight)
+| 6  | - [ ] My 6th idea for our android phone game is to make a Card Game similar to (Balatro) and (Slay the Spire)
+| 7  | - [ ] My 7th idea for our android phone game is to make an Idle Clicker Game similar to (Cookie Clicker) and (Idle Miner Tycoon)
+| 8  | - [ ] My 8th idea for our android phone game is to make a Chasing Game similar to (Subway Surfers) and (Temple Run)
+| 9  | - [ ] My 9th idea for our android phone game is to make a Survival Game similar to (Pixel Survival) and (Survive-Wilderness Survival)
+| 10 | - [ ] My 10th idea for our android phone game is to make a Puzzle Game similar to (Monument Valley), (Baba is You), (Smash Hit), and (Bad Piggies)
+| 11 | - [ ] My 11th idea for our android phone game is to make an Role Playing Game similar to (Slice & Dice) and (Grim Quest)
+| 12 | - [ ] My 12th idea for our android phone game is to make a Strategy Game similar to (Bloons TD 1-6) and (PVZ 1-2)
+| 13 | - [ ] My 13th idea for our android phone game is to make an Arcade Game similar to (Geometry Dash), (1945 Air Force), and (Burrito Bison)
+| 14 | - [ ] My 14th idea for our android phone game is to make a Fighting Game similar to (Shadow Fight 2) and (Bloody Bastards)
+| 15 | - [ ] My 15th idea for our android phone game is to make an Adventure Game similar to (DREDGE) and (Machinarium)
+| 16 | - [ ] My 16th idea for our android phone game is to make a Racing Game similar to (Earn to Die) and (Drive Ahead!)
+| 17 | - [ ] My 17th idea for our android phone game is to make a Simulation Game similar to (Stardew Valley) and (Papers Please)
