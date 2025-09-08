@@ -27,12 +27,12 @@ jobs:
           key: ${{ runner.os }}-unity-${{ hashFiles('**/Packages/manifest.json') }}
 
       - name: Setup Unity
-        uses: game-ci/unity-actions/setup@v2
+        uses: game-ci/unity-setup@v2
         with:
           unityVersion: 2023.2.0f1
 
       - name: Build Project
-        uses: game-ci/unity-actions/builder@v2
+        uses: game-ci/unity-builder@v2
         with:
           projectPath: .
           buildTarget: ${{ matrix.target }}
