@@ -26,17 +26,14 @@ jobs:
             Packages
           key: ${{ runner.os }}-unity-${{ hashFiles('**/Packages/manifest.json') }}
 
-      - name: Setup Unity
-        uses: game-ci/unity-setup@v2
+      - name: Unity - Builder
+        uses: game-ci/unity-builder@v4.5.0
         with:
+          targetPlatform: ${{ matrix.target }}
           unityVersion: 2023.2.0f1
-
-      - name: Build Project
-        uses: game-ci/unity-builder@v4
-        with:
           projectPath: .
-          buildTarget: ${{ matrix.target }}
-          buildPath: build/${{ matrix.target }}
+          buildsPath: build
+          buildName: MyGame
           clean: true
 
       - name: Upload build artifacts
