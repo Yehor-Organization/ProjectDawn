@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 public class Player : NetworkBehaviour
 {
     public float moveSpeed = 5f;
+    public float rotateSpeed = 200f; // keyboard rotation speed (degrees/sec)
     private Camera playerCamera;
     private Vector3 cameraOffset = new Vector3(0, 2, -5);
 
@@ -14,10 +15,12 @@ public class Player : NetworkBehaviour
     {
         if (IsOwner)
         {
+            // Camera
             playerCamera = Camera.main;
             if (playerCamera != null)
                 playerCamera.gameObject.SetActive(true);
 
+            // Find joystick in the scene
             joystick = FindObjectOfType<FixedJoystick>();
             if (joystick == null)
                 Debug.LogWarning("No joystick found in scene!");
@@ -39,31 +42,36 @@ public class Player : NetworkBehaviour
         float h = 0f;
         float v = 0f;
 
-        // Keyboard input
+        // --- Keyboard input ---
         if (Keyboard.current.wKey.isPressed) v += 1f;
         if (Keyboard.current.sKey.isPressed) v -= 1f;
         if (Keyboard.current.aKey.isPressed) h -= 1f;
         if (Keyboard.current.dKey.isPressed) h += 1f;
 
-        // Joystick input
+        // --- Joystick input ---
+        Vector3 joystickDir = Vector3.zero;
         if (joystick != null)
         {
-            h += joystick.Horizontal;
-            v += joystick.Vertical;
+            joystickDir = new Vector3(joystick.Horizontal, 0, joystick.Vertical);
+            if (joystickDir.magnitude > 0.1f)
+            {
+                // Instant rotation toward joystick direction
+                transform.forward = joystickDir.normalized;
+                v = joystickDir.magnitude; // move forward according to joystick
+                h = 0f; // ignore keyboard rotation if joystick used
+            }
         }
 
-        Vector3 moveDirection = new Vector3(h, 0, v);
+        // Move forward/backward
+        transform.position += transform.forward * v * moveSpeed * Time.deltaTime;
 
-        if (moveDirection.magnitude > 0.1f)
+        // Rotate left/right with keyboard only
+        if (h != 0f && joystickDir.magnitude <= 0.1f)
         {
-            // Rotate immediately toward joystick direction
-            transform.forward = moveDirection.normalized;
-
-            // Move in that direction
-            transform.position += moveDirection.normalized * moveSpeed * Time.deltaTime;
+            transform.Rotate(Vector3.up * h * rotateSpeed * Time.deltaTime);
         }
 
-        // Up/down with keyboard
+        // Up/down
         if (Keyboard.current.spaceKey.isPressed)
             transform.position += Vector3.up * moveSpeed * Time.deltaTime;
         if (Keyboard.current.leftCtrlKey.isPressed)
