@@ -1,7 +1,7 @@
 name: Unity Build
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   build:
@@ -27,24 +27,20 @@ jobs:
         key: ${{ runner.os }}-unity-${{ hashFiles('**/Packages/manifest.json') }}
 
     - name: Setup Unity
-      uses: game-ci/unity-setup@v2
+      uses: game-ci/unity/setup@v2
       with:
-        unityVersion: 2023.2.0f1 # Set your Unity version
-        # optional: license file if not using activation step
-        # unityLicenseFile: ${{ secrets.UNITY_LICENSE }}
+        unityVersion: 2023.2.0f1
 
     - name: Build Project
-      uses: game-ci/unity-builder@v2
+      uses: game-ci/unity/builder@v2
       with:
         projectPath: .
         buildTarget: ${{ matrix.target }}
         buildPath: build/${{ matrix.target }}
-        # optional: specify scenes manually
-        # scenes: Assets/Scenes/Main.unity
         clean: true
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Unity-${{ matrix.target }}-build
         path: build/${{ matrix.target }}
