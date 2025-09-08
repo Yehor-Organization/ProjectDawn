@@ -32,7 +32,7 @@ jobs:
           unityVersion: 2023.2.0f1
 
       - name: Build Project
-        uses: game-ci/unity-builder@v2
+        uses: game-ci/unity-builder@v4
         with:
           projectPath: .
           buildTarget: ${{ matrix.target }}
