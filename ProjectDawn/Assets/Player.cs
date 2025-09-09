@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 
 public class Player : NetworkBehaviour
 {
-    public float moveSpeed = 5f;
+    public float moveSpeed = 15f;
     public float rotateSpeed = 200f; // keyboard rotation speed (degrees/sec)
     private Camera playerCamera;
     private Vector3 cameraOffset = new Vector3(0, 2, -5);
@@ -18,7 +18,11 @@ public class Player : NetworkBehaviour
             // Camera
             playerCamera = Camera.main;
             if (playerCamera != null)
+            {
+                // Compute initial offset from player to camera
+                cameraOffset = playerCamera.transform.position - transform.position;
                 playerCamera.gameObject.SetActive(true);
+            }
 
             // Find joystick in the scene
             joystick = FindObjectOfType<FixedJoystick>();
@@ -27,12 +31,14 @@ public class Player : NetworkBehaviour
         }
     }
 
+
     void LateUpdate()
     {
         if (!IsOwner || playerCamera == null) return;
 
         playerCamera.transform.position = transform.position + cameraOffset;
         playerCamera.transform.LookAt(transform.position + Vector3.up);
+
     }
 
     void Update()
