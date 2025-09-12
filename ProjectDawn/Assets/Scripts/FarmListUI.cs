@@ -9,9 +9,10 @@ public class FarmListUI : MonoBehaviour
     [SerializeField] private GameManager gameManager;
     [SerializeField] private RectTransform farmListContainer;
     [SerializeField] private GameObject farmListItemPrefab;
-
+    [SerializeField] private GameObject joystickUI;
     void Start()
     {
+        joystickUI.SetActive(false);
         Debug.Log("[DEBUG][FarmListUI] Starting FetchFarms coroutine...");
         StartCoroutine(FetchFarms());
     }
@@ -47,21 +48,28 @@ public class FarmListUI : MonoBehaviour
         }
     }
 
-    private void PopulateFarmList(List<FarmInfo> farms)
+    public void FarmJoined()
     {
-        Debug.Log("[DEBUG][FarmListUI] Clearing old farm list items...");
-        foreach (Transform child in farmListContainer)
-            Destroy(child.gameObject);
-
-        Debug.Log($"[DEBUG][FarmListUI] Populating UI with {farms.Count} farms...");
-        foreach (var farm in farms)
-        {
-            Debug.Log($"[DEBUG][FarmListUI] Creating item for farmId={farm.id}, name={farm.name}, owner={farm.ownerName}");
-            var item = Instantiate(farmListItemPrefab, farmListContainer);
-            var farmItemUI = item.GetComponent<FarmListItemUI>();
-            farmItemUI.Setup(farm, gameManager);
-        }
-
-        Debug.Log("[DEBUG][FarmListUI] Farm list UI updated successfully.");
+        joystickUI.SetActive(true);
+        gameObject.SetActive(false);
     }
+
+    private void PopulateFarmList(List<FarmInfo> farms)
+{
+    Debug.Log("[DEBUG][FarmListUI] Clearing old farm list items...");
+    foreach (Transform child in farmListContainer)
+        Destroy(child.gameObject);
+
+    Debug.Log($"[DEBUG][FarmListUI] Populating UI with {farms.Count} farms...");
+    foreach (var farm in farms)
+    {
+        Debug.Log($"[DEBUG][FarmListUI] Creating item for farmId={farm.id}, name={farm.name}, owner={farm.ownerName}");
+        var item = Instantiate(farmListItemPrefab, farmListContainer);
+        var farmItemUI = item.GetComponent<FarmListItemUI>();
+        farmItemUI.Setup(farm, gameManager, this); // 👈 pass `this`
+    }
+
+    Debug.Log("[DEBUG][FarmListUI] Farm list UI updated successfully.");
+}
+
 }
