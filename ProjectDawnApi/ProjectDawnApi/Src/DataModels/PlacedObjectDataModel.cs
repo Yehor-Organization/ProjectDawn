@@ -20,9 +20,6 @@ namespace ProjectDawnApi
         public string Type { get; set; } = string.Empty; // e.g., "Barn", "Fence", "Tree"
 
         // Storing 3D vector data as separate float properties
-        public float PositionX { get; set; }
-        public float PositionY { get; set; }
-        public float PositionZ { get; set; }
-        public float RotationY { get; set; }
+        public TransformationDataModel Transformation { get; set; } = new TransformationDataModel();
     }
 }

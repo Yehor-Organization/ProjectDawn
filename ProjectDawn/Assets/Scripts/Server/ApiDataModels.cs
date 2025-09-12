@@ -23,15 +23,17 @@ public class FarmState
 public class PlacedObject
 {
     public int id;
-    public string type; // e.g., "Tree", "Fence", "Barn"
-    public PositionDTO position;
-    public float rotationY;
+    public string type;
+    public TransformationDataModel transformation;
 }
 
 [System.Serializable]
-public class PositionDTO
+public class TransformationDataModel
 {
-    public float x;
-    public float y;
-    public float z;
+    public float positionX { get; set; }
+    public float positionY { get; set; }
+    public float positionZ { get; set; }
+    public float rotationX { get; set; }
+    public float rotationY { get; set; }
+    public float rotationZ { get; set; }
 }

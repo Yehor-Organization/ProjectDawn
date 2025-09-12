@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection; // for IServiceScopeFactory
+using System.Collections.Generic;
 
 namespace ProjectDawnApi
 {
@@ -10,11 +12,17 @@ namespace ProjectDawnApi
     {
         private readonly ProjectDawnDbContext _context;
         private readonly ILogger<FarmHub> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public FarmHub(ProjectDawnDbContext context, ILogger<FarmHub> logger)
+        // Throttle saves per player
+        private static readonly TimeSpan TransformationSaveInterval = TimeSpan.FromSeconds(5);
+        private static readonly Dictionary<int, DateTime> LastTransformationSave = new();
+
+        public FarmHub(ProjectDawnDbContext context, ILogger<FarmHub> logger, IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task JoinFarm(string farmIdStr, int playerId)
@@ -27,17 +35,17 @@ namespace ProjectDawnApi
                 return;
             }
 
-            var player = await _context.Players.FindAsync(playerId);
+            var player = await _context.Players
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == playerId);
             if (player == null)
             {
                 _logger.LogWarning($"Player {playerId} does not exist.");
                 return;
             }
 
-            // Add this connection to the SignalR group
             await Groups.AddToGroupAsync(Context.ConnectionId, farmIdStr);
 
-            // ✅ First update/add visitor in DB
             var visitor = await _context.FarmVisitors
                 .FirstOrDefaultAsync(v => v.FarmId == farmId && v.PlayerId == playerId);
 
@@ -47,7 +55,8 @@ namespace ProjectDawnApi
                 {
                     FarmId = farmId,
                     PlayerId = playerId,
-                    ConnectionId = Context.ConnectionId
+                    ConnectionId = Context.ConnectionId,
+                    Transformation = new TransformationDataModel()
                 };
                 _context.FarmVisitors.Add(visitor);
                 _logger.LogInformation("Visitor added: {@Visitor}", visitor);
@@ -60,35 +69,32 @@ namespace ProjectDawnApi
 
             await _context.SaveChangesAsync();
 
-            // ✅ Now send existing players (excluding yourself)
             var existingVisitors = await _context.FarmVisitors
+                .AsNoTracking()
                 .Where(v => v.FarmId == farmId && v.PlayerId != playerId)
                 .Select(v => v.PlayerId)
                 .ToListAsync();
 
             await Clients.Caller.SendAsync("InitialPlayers", existingVisitors);
 
-            // Notify others about the new player
             await Clients.OthersInGroup(farmIdStr).SendAsync("PlayerJoined", playerId);
         }
 
-
-        public async Task UpdatePlayerPosition(string farmIdStr, int playerId, float x, float y, float z)
+        /// <summary>
+        /// Updates both position and rotation of a player.
+        /// </summary>
+        public async Task UpdatePlayerTransformation(string farmIdStr, int playerId, TransformationDataModel transformation)
         {
             await Clients.OthersInGroup(farmIdStr)
-                .SendAsync("PlayerPositionUpdated", playerId, new { x, y, z });
+                .SendAsync("PlayerTransformationUpdated", playerId, transformation);
 
-            var visitor = await _context.FarmVisitors
-                .FirstOrDefaultAsync(v => v.FarmId == int.Parse(farmIdStr) && v.PlayerId == playerId);
-
-            if (visitor != null)
+            if (int.TryParse(farmIdStr, out int farmId))
             {
-                visitor.LastPositionX = x;
-                visitor.LastPositionY = y;
-                visitor.LastPositionZ = z;
-                await _context.SaveChangesAsync();
+                // Store in dictionary (overwrite old value)
+                TransformationQueue.Queue[(farmId, playerId)] = transformation;
             }
         }
+
 
         public override async Task OnDisconnectedAsync(Exception exception)
         {

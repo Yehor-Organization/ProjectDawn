@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,8 +17,8 @@ public class GameManager : MonoBehaviour
     public string serverBaseUrl = "https://localhost:7123";
 
     [Header("Game State")]
-    [Tooltip("The ID of the farm to load.")]
-    public string farmId = "1";
+    [Tooltip("The ID of the farm to load. This can be set via UI.")]
+    public string farmId;
     [Tooltip("The ID of the current player.")]
     public int playerId = 101;
 
@@ -43,13 +43,16 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void Start()
+    /// <summary>
+    /// Called from UI (button) to start joining a farm.
+    /// </summary>
+    public void JoinFarm(string newFarmId)
     {
-        // Start the process of loading the farm
-        StartCoroutine(LoadFarmState());
+        farmId = newFarmId;
+        StartCoroutine(LoadFarmStateAndConnect());
     }
 
-    private IEnumerator LoadFarmState()
+    private IEnumerator LoadFarmStateAndConnect()
     {
         string url = $"{serverBaseUrl}/api/Farms/{farmId}";
         Debug.Log($"Requesting farm state from: {url}");
@@ -57,8 +60,6 @@ public class GameManager : MonoBehaviour
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
             // --- HACK FOR DEVELOPMENT ONLY ---
-            // This bypasses SSL certificate validation.
-            // Do NOT use this in a production build.
             webRequest.certificateHandler = new BypassCertificate();
             // --------------------------------
 
@@ -79,7 +80,6 @@ public class GameManager : MonoBehaviour
                 Debug.Log("World built. Connecting to real-time service...");
                 if (realTimeClient != null)
                 {
-                    // ***** THIS IS THE CORRECTED LINE *****
                     realTimeClient.ConnectAndJoin(serverBaseUrl, farmId, playerId);
                 }
                 else
@@ -94,17 +94,50 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void LeaveFarm()
+    {
+        Debug.Log("[GameManager] Leaving current farm...");
+
+        // Destroy spawned objects
+        foreach (Transform child in transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Disconnect real-time
+        if (realTimeClient != null)
+        {
+            realTimeClient.Disconnect();
+        }
+
+        farmId = null;
+    }
+
+
     private void BuildWorld(FarmState farmData)
     {
-        Debug.Log($"Spawning {farmData.placedObjects.Count} objects for farm '{farmData.name}'...");
+        // 🔹 Clear old objects (only those spawned by GameManager)
+        foreach (Transform child in transform)
+        {
+            Destroy(child.gameObject);
+        }
+
         foreach (var placedObject in farmData.placedObjects)
         {
             if (prefabDictionary.TryGetValue(placedObject.type, out GameObject prefab))
             {
-                Vector3 position = new Vector3(placedObject.position.x, placedObject.position.y, placedObject.position.z);
-                Quaternion rotation = Quaternion.Euler(0, placedObject.rotationY, 0);
+                Vector3 position = new Vector3(
+                    placedObject.transformation.positionX,
+                    placedObject.transformation.positionY,
+                    placedObject.transformation.positionZ
+                );
+                Quaternion rotation = Quaternion.Euler(
+                    placedObject.transformation.rotationX,
+                    placedObject.transformation.rotationY,
+                    placedObject.transformation.rotationZ
+                );
 
-                Instantiate(prefab, position, rotation);
+                Instantiate(prefab, position, rotation, transform); // parent under GameManager
             }
             else
             {
@@ -112,6 +145,7 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+
 }
 
 // Helper class for the inspector
@@ -123,13 +157,7 @@ public class ObjectPrefabMapping
 }
 
 // --- HACK FOR DEVELOPMENT ONLY ---
-// This is a helper class to bypass SSL certificate errors when using 'localhost'
 public class BypassCertificate : CertificateHandler
 {
-    protected override bool ValidateCertificate(byte[] certificateData)
-    {
-        //Simply return true no matter what
-        return true;
-    }
+    protected override bool ValidateCertificate(byte[] certificateData) => true;
 }
-

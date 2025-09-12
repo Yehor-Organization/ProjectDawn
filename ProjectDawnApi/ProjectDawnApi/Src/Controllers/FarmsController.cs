@@ -41,6 +41,7 @@ namespace ProjectDawnApi
                 .Include(f => f.Visitors)
                     .ThenInclude(v => v.PlayerDataModel)
                 .Where(f => f.Id == id)
+                .AsNoTracking() // 👈 prevents tracking issues
                 .Select(f => new
                 {
                     f.Id,
@@ -50,14 +51,29 @@ namespace ProjectDawnApi
                     {
                         po.Id,
                         po.Type,
-                        Position = new { X = po.PositionX, Y = po.PositionY, Z = po.PositionZ },
-                        po.RotationY
+                        Transformation = new // 👈 project fields manually
+                        {
+                            po.Transformation.positionX,
+                            po.Transformation.positionY,
+                            po.Transformation.positionZ,
+                            po.Transformation.rotationX,
+                            po.Transformation.rotationY,
+                            po.Transformation.rotationZ
+                        }
                     }),
                     Visitors = f.Visitors.Select(v => new
                     {
                         v.PlayerId,
                         PlayerName = v.PlayerDataModel != null ? v.PlayerDataModel.Name : "Unknown",
-                        Position = new { X = v.LastPositionX, Y = v.LastPositionY, Z = v.LastPositionZ }
+                        Transformation = new // 👈 project fields manually
+                        {
+                            v.Transformation.positionX,
+                            v.Transformation.positionY,
+                            v.Transformation.positionZ,
+                            v.Transformation.rotationX,
+                            v.Transformation.rotationY,
+                            v.Transformation.rotationZ
+                        }
                     })
                 })
                 .FirstOrDefaultAsync();

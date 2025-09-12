@@ -1,0 +1,124 @@
+﻿namespace ProjectDawnApi
+{
+    public static class DbInitializer
+    {
+        public static void Initialize(ProjectDawnDbContext context)
+        {
+            if (context.Farms.Any())
+                return;
+
+            // Players
+            var player1 = new PlayerDataModel { Name = "Alice" };
+            var player2 = new PlayerDataModel { Name = "Bob" };
+            var player3 = new PlayerDataModel { Name = "Charlie" };
+            context.Players.AddRange(player1, player2, player3);
+            context.SaveChanges();
+
+            // Farms
+            var farm1 = new FarmDataModel { Name = "Sunny Meadow Farm", OwnerId = player1.Id };
+            var farm2 = new FarmDataModel { Name = "Bob's Grand Orchard", OwnerId = player2.Id };
+            context.Farms.AddRange(farm1, farm2);
+            context.SaveChanges();
+
+            // Objects on farm1
+            context.PlacedObjects.AddRange(
+                new PlacedObjectDataModel
+                {
+                    FarmId = farm1.Id,
+                    Type = "Barn",
+                    Transformation = new TransformationDataModel
+                    {
+                        positionX = 10f,
+                        positionY = 0f,
+                        positionZ = -5f,
+                        rotationX = 0f,
+                        rotationY = 90f,
+                        rotationZ = 0f
+                    }
+                },
+                new PlacedObjectDataModel
+                {
+                    FarmId = farm1.Id,
+                    Type = "Fence",
+                    Transformation = new TransformationDataModel
+                    {
+                        positionX = 15f,
+                        positionY = 0f,
+                        positionZ = 2f,
+                        rotationX = 0f,
+                        rotationY = 0f,
+                        rotationZ = 0f
+                    }
+                }
+            );
+
+            // Objects on farm2
+            context.PlacedObjects.AddRange(
+                new PlacedObjectDataModel
+                {
+                    FarmId = farm2.Id,
+                    Type = "AppleTree",
+                    Transformation = new TransformationDataModel
+                    {
+                        positionX = 3f,
+                        positionY = 0f,
+                        positionZ = 7f,
+                        rotationX = 0f,
+                        rotationY = 45f,
+                        rotationZ = 0f
+                    }
+                },
+                new PlacedObjectDataModel
+                {
+                    FarmId = farm2.Id,
+                    Type = "Scarecrow",
+                    Transformation = new TransformationDataModel
+                    {
+                        positionX = -2f,
+                        positionY = 0f,
+                        positionZ = 4f,
+                        rotationX = 0f,
+                        rotationY = 0f,
+                        rotationZ = 0f
+                    }
+                }
+            );
+
+            context.SaveChanges();
+
+            // Seed initial visitors with transformation
+            context.FarmVisitors.AddRange(
+                new FarmVisitorDataModel
+                {
+                    FarmId = farm1.Id,
+                    PlayerId = player3.Id,
+                    Transformation = new TransformationDataModel
+                    {
+                        positionX = 5f,
+                        positionY = 0f,
+                        positionZ = 5f,
+                        rotationX = 0f,
+                        rotationY = 0f,
+                        rotationZ = 0f
+                    }
+                },
+                new FarmVisitorDataModel
+                {
+                    FarmId = farm2.Id,
+                    PlayerId = player1.Id,
+                    Transformation = new TransformationDataModel
+                    {
+                        positionX = 1f,
+                        positionY = 0f,
+                        positionZ = 2f,
+                        rotationX = 0f,
+                        rotationY = 0f,
+                        rotationZ = 0f
+                    }
+                }
+            );
+
+            context.SaveChanges();
+        }
+    }
+}

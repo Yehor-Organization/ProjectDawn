@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -8,22 +8,22 @@ using UnityEngine;
 public class PlayerManager : MonoBehaviour
 {
     [Header("Prefabs")]
-    [Tooltip("The prefab to spawn for the local player (the one you control).")]
     public GameObject localPlayerPrefab;
-
-    [Tooltip("The prefab to spawn for remote players (other players in the game).")]
     public GameObject remotePlayerPrefab;
 
-    // A dictionary to keep track of remote players. The key is the player's ID.
-    // The value is the GameObject representing that player. This allows for very fast lookups.
+    [Header("Default Settings")]
+    [Tooltip("Default movement speed for all players.")]
+    public float defaultMoveSpeed = 15f;
+
+    [Tooltip("Default rotation speed for all players.")]
+    public float defaultRotateSpeed = 200f;
+
+    [Tooltip("Minimum distance change before sending a position update.")]
+    public float positionUpdateThreshold = 0.01f;
+
+    // Track remote players by their ID
     private readonly Dictionary<int, GameObject> remotePlayers = new Dictionary<int, GameObject>();
 
-    /// <summary>
-    /// Spawns a player character. It handles spawning the local player differently
-    /// from remote players.
-    /// </summary>
-    /// <param name="playerId">The ID of the player to spawn.</param>
-    /// <param name="isLocalPlayer">Is this the player this client will control?</param>
     public void SpawnPlayer(int playerId, bool isLocalPlayer)
     {
         if (isLocalPlayer)
@@ -31,8 +31,17 @@ public class PlayerManager : MonoBehaviour
             Debug.Log($"Spawning LOCAL player with ID: {playerId}");
             if (localPlayerPrefab != null)
             {
-                // You might want to spawn at a specific spawn point. For now, we use Vector3.zero.
-                Instantiate(localPlayerPrefab, Vector3.zero, Quaternion.identity);
+                var go = Instantiate(localPlayerPrefab, Vector3.zero, Quaternion.identity);
+                var localCtrl = go.GetComponent<LocalPlayerController>();
+                if (localCtrl != null)
+                {
+                    // ✅ Use the initializer instead of touching fields directly
+                    localCtrl.Initialize(defaultMoveSpeed, defaultRotateSpeed, positionUpdateThreshold);
+                }
+                else
+                {
+                    Debug.LogWarning("LocalPlayer prefab missing LocalPlayerController!");
+                }
             }
             else
             {
@@ -41,17 +50,19 @@ public class PlayerManager : MonoBehaviour
         }
         else
         {
-            // If we already have a GameObject for this player, don't spawn another one.
-            if (remotePlayers.ContainsKey(playerId))
-            {
-                return;
-            }
+            if (remotePlayers.ContainsKey(playerId)) return;
 
             Debug.Log($"Spawning REMOTE player with ID: {playerId}");
             if (remotePlayerPrefab != null)
             {
-                GameObject playerGO = Instantiate(remotePlayerPrefab, Vector3.zero, Quaternion.identity);
-                remotePlayers.Add(playerId, playerGO); // Add the new player to our directory.
+                var playerGO = Instantiate(remotePlayerPrefab, Vector3.zero, Quaternion.identity);
+                var remoteCtrl = playerGO.GetComponent<RemotePlayerController>();
+                if (remoteCtrl != null)
+                {
+                    remoteCtrl.Initialize(defaultMoveSpeed, defaultRotateSpeed);
+                }
+
+                remotePlayers.Add(playerId, playerGO);
             }
             else
             {
@@ -60,9 +71,6 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Finds and destroys the GameObject for a player who has left.
-    /// </summary>
     public void RemovePlayer(int playerId)
     {
         if (remotePlayers.TryGetValue(playerId, out GameObject playerGO))
@@ -73,16 +81,34 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Finds a player's GameObject by their ID and updates its position.
-    /// </summary>
-    public void UpdatePlayerPosition(int playerId, Vector3 newPosition)
+    public void ClearAllRemotePlayers()
     {
-        if (remotePlayers.TryGetValue(playerId, out GameObject playerGO))
+        foreach (var kvp in remotePlayers)
         {
-            // In a real game, you would smoothly move the character (e.g., using Lerp)
-            // instead of teleporting them instantly. For this example, we'll just set it.
-            playerGO.transform.position = newPosition;
+            if (kvp.Value != null)
+                Destroy(kvp.Value);
+        }
+        remotePlayers.Clear();
+    }
+
+
+    public void UpdatePlayerTransformation(int playerId, TransformationDataModel newTransformation)
+    {
+        if (remotePlayers.TryGetValue(playerId, out GameObject playerObj))
+        {
+            var remote = playerObj.GetComponent<RemotePlayerController>();
+            if (remote != null)
+            {
+                remote.SetTargetTransformation(newTransformation);
+            }
+            else
+            {
+                Debug.LogWarning($"[DEBUG][PlayerManager] No RemotePlayerController found for player {playerId} ({playerObj.name})");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[DEBUG][PlayerManager] Player {playerId} not found in dictionary!");
         }
     }
 }

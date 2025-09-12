@@ -1,48 +1,53 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>
-/// Handles input, movement, and camera for the player this client controls.
-/// This script should be placed on your "Local Player" prefab.
-/// </summary>
 public class LocalPlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed = 15f;
-    public float rotateSpeed = 200f;
+    private float moveSpeed;
+    private float rotateSpeed;
 
     [Header("Camera")]
-    public Vector3 cameraOffset = new Vector3(0, 10, -8);
+    private Vector3 cameraOffset;
     private Camera playerCamera;
 
-    // --- Joystick ---
-    private FixedJoystick joystick;
+    [Header("Networking")]
+    private float positionUpdateThreshold;
 
-    // --- Private References ---
+    private FixedJoystick joystick;
     private ProjectDawnApi networkClient;
     private Vector3 lastPosition;
-    private float positionUpdateThreshold = 0.05f; // How far the player must move to send an update
+
+    /// <summary>
+    /// Called by PlayerManager after spawning to configure speeds & thresholds.
+    /// </summary>
+    public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold)
+    {
+        this.moveSpeed = moveSpeed;
+        this.rotateSpeed = rotateSpeed;
+        this.positionUpdateThreshold = positionUpdateThreshold;
+    }
 
     void Start()
     {
+        // Setup camera
         playerCamera = Camera.main;
         if (playerCamera != null)
         {
-            playerCamera.transform.position = transform.position + cameraOffset;
+            // Auto-calculate offset based on how the camera is placed in the editor
+            cameraOffset = playerCamera.transform.position - transform.position;
             playerCamera.transform.LookAt(transform.position);
         }
 
-        // Find joystick in the scene
+        // Joystick lookup
         joystick = FindObjectOfType<FixedJoystick>();
         if (joystick == null)
             Debug.LogWarning("No joystick found in scene!");
 
-        // Find the network client in the scene to send position updates
+        // Network client lookup
         networkClient = FindObjectOfType<ProjectDawnApi>();
         if (networkClient == null)
-        {
             Debug.LogError("Could not find ProjectDawnApi script in the scene!");
-        }
 
         lastPosition = transform.position;
     }
@@ -69,10 +74,9 @@ public class LocalPlayerController : MonoBehaviour
             joystickDir = new Vector3(joystick.Horizontal, 0, joystick.Vertical);
             if (joystickDir.magnitude > 0.1f)
             {
-                // Rotate instantly toward joystick direction
-                transform.forward = joystickDir.normalized;
-                v = joystickDir.magnitude; // move forward according to joystick strength
-                h = 0f; // disable keyboard rotation while joystick is active
+                transform.forward = joystickDir.normalized;  // snap forward to joystick direction
+                v = joystickDir.magnitude;
+                h = 0f;
             }
         }
 
@@ -80,22 +84,35 @@ public class LocalPlayerController : MonoBehaviour
         transform.position += transform.forward * v * moveSpeed * Time.deltaTime;
 
         if (h != 0f && joystickDir.magnitude <= 0.1f)
+        {
             transform.Rotate(Vector3.up * h * rotateSpeed * Time.deltaTime);
+        }
 
-        // --- Send Position Update to Server ---
+        // --- Send Transformation Update ---
         if (Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold)
         {
             if (networkClient != null)
             {
                 lastPosition = transform.position;
-                networkClient.SendPositionUpdate(lastPosition);
+
+                // Build transformation object
+                var transformation = new TransformationDataModel
+                {
+                    positionX = transform.position.x,
+                    positionY = transform.position.y,
+                    positionZ = transform.position.z,
+                    rotationX = transform.rotation.eulerAngles.x,
+                    rotationY = transform.rotation.eulerAngles.y,
+                    rotationZ = transform.rotation.eulerAngles.z
+                };
+
+                networkClient.SendTransformationUpdate(transformation);
             }
         }
     }
 
     void LateUpdate()
     {
-        // Keep the camera locked to the player
         if (playerCamera != null)
         {
             playerCamera.transform.position = transform.position + cameraOffset;

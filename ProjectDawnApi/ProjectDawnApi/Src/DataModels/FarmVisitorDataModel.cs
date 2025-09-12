@@ -11,8 +11,6 @@
         // Nullable because visitors may exist before joining SignalR
         public string? ConnectionId { get; set; }
 
-        public float LastPositionX { get; set; }
-        public float LastPositionY { get; set; }
-        public float LastPositionZ { get; set; }
+        public TransformationDataModel Transformation { get; set; } 
     }
 }

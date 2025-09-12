@@ -4,15 +4,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
-// A simple class to represent player position.
-[System.Serializable]
-public class PlayerPosition
-{
-    public float x;
-    public float y;
-    public float z;
-}
-
 /// <summary>
 /// Handles the SignalR connection to the server.
 /// This script is now controlled by the GameManager and delegates player actions to the PlayerManager.
@@ -28,7 +19,7 @@ public class ProjectDawnApi : MonoBehaviour
     private int currentPlayerId;
 
     /// <summary>
-    /// Called by the GameManager after the initial world state has been loaded.
+    /// Called by the GameManager after the farm is chosen.
     /// </summary>
     public async void ConnectAndJoin(string serverUrl, string farmId, int playerId)
     {
@@ -98,11 +89,8 @@ public class ProjectDawnApi : MonoBehaviour
                 Debug.Log($"[DEBUG] Event: InitialPlayers → count={playerIds.Count}, myId={currentPlayerId}");
                 foreach (var id in playerIds)
                 {
-                    Debug.Log($"[DEBUG] InitialPlayers includes id={id}");
                     if (id != this.currentPlayerId)
-                    {
                         playerManager.SpawnPlayer(id, false);
-                    }
                 }
             });
         });
@@ -116,20 +104,15 @@ public class ProjectDawnApi : MonoBehaviour
             });
         });
 
-        connection.On<int, PlayerPosition>("PlayerPositionUpdated", (updatedPlayerId, newPosition) =>
+        connection.On<int, TransformationDataModel>("PlayerTransformationUpdated", (updatedPlayerId, newTransformation) =>
         {
             MainThreadDispatcher.Enqueue(() =>
             {
-                Debug.Log($"[DEBUG] Event: PlayerPositionUpdated → player={updatedPlayerId}, pos=({newPosition.x},{newPosition.y},{newPosition.z}), myId={currentPlayerId}");
-
                 if (updatedPlayerId == this.currentPlayerId)
-                {
-                    Debug.Log("[DEBUG] Ignoring own PlayerPositionUpdated event");
                     return;
-                }
 
-                Vector3 pos = new Vector3(newPosition.x, newPosition.y, newPosition.z);
-                playerManager.UpdatePlayerPosition(updatedPlayerId, pos);
+                Debug.Log($"[DEBUG][SignalR] Received PlayerTransformationUpdated → player={updatedPlayerId}, data={JsonUtility.ToJson(newTransformation)}");
+                playerManager.UpdatePlayerTransformation(updatedPlayerId, newTransformation);
             });
         });
 
@@ -163,6 +146,10 @@ public class ProjectDawnApi : MonoBehaviour
         try
         {
             Debug.Log($"[DEBUG] Invoking JoinFarm for farm={currentFarmId}, player={currentPlayerId}");
+
+            // clear all existing players before rejoining
+            playerManager.ClearAllRemotePlayers();
+
             await connection.InvokeAsync("JoinFarm", currentFarmId, currentPlayerId);
             Debug.Log("[DEBUG] JoinFarm invoked successfully.");
         }
@@ -172,32 +159,41 @@ public class ProjectDawnApi : MonoBehaviour
         }
     }
 
-    public async Task SendPositionUpdate(Vector3 position)
+    public async Task SendTransformationUpdate(TransformationDataModel transformation)
     {
-        if (connection.State != HubConnectionState.Connected)
-        {
-            Debug.LogWarning("[DEBUG] Tried to send position update but connection is not connected.");
+        if (connection == null || connection.State != HubConnectionState.Connected)
             return;
-        }
 
         try
         {
-            Debug.Log($"[DEBUG] Sending position update → player={currentPlayerId}, pos={position}");
-            await connection.InvokeAsync("UpdatePlayerPosition", currentFarmId, currentPlayerId, position.x, position.y, position.z);
+            await connection.InvokeAsync("UpdatePlayerTransformation", currentFarmId, currentPlayerId, transformation);
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[DEBUG] Error sending position update: {ex.Message}");
+            Debug.LogError($"[DEBUG] Error sending transformation update: {ex.Message}");
         }
     }
 
-    private async void OnDestroy()
+    public async void Disconnect()
     {
         if (connection != null && connection.State == HubConnectionState.Connected)
         {
             await connection.StopAsync();
-            Debug.Log("[DEBUG] Connection stopped on destroy.");
+            Debug.Log("[DEBUG] Disconnected from farm hub.");
         }
+
+        connection = null;
+        currentFarmId = null;
+        currentPlayerId = 0;
+
+        // also clear spawned players
+        if (playerManager != null)
+            playerManager.ClearAllRemotePlayers();
+    }
+
+    private async void OnDestroy()
+    {
+        Disconnect();
     }
 }
 
@@ -211,6 +207,8 @@ public class MainThreadDispatcher : MonoBehaviour
 
     void Awake()
     {
+        Application.runInBackground = true;
+
         if (_instance == null)
         {
             _instance = this;

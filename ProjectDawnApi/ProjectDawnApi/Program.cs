@@ -17,7 +17,12 @@ builder.Services.AddDbContext<ProjectDawnDbContext>(options =>
 
 // ------------------------------------
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.PropertyNamingPolicy = null; // keep property names as-is
+    });
+;
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
