@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.Http.Connections;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -48,7 +49,10 @@ public class ProjectDawnApi : MonoBehaviour
         }
 
         connection = new HubConnectionBuilder()
-            .WithUrl($"{serverUrl}/farmHub")
+            .WithUrl($"{serverUrl}/farmHub", options =>
+            {
+                options.Transports = HttpTransportType.WebSockets;
+            })
             .WithAutomaticReconnect()
             .Build();
 
@@ -146,8 +150,6 @@ public class ProjectDawnApi : MonoBehaviour
         try
         {
             Debug.Log($"[DEBUG] Invoking JoinFarm for farm={currentFarmId}, player={currentPlayerId}");
-
-            // clear all existing players before rejoining
             playerManager.ClearAllRemotePlayers();
 
             await connection.InvokeAsync("JoinFarm", currentFarmId, currentPlayerId);
@@ -178,6 +180,16 @@ public class ProjectDawnApi : MonoBehaviour
     {
         if (connection != null && connection.State == HubConnectionState.Connected)
         {
+            try
+            {
+                await connection.InvokeAsync("LeaveFarm", currentFarmId, currentPlayerId);
+                Debug.Log("[DEBUG] LeaveFarm invoked on server.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[DEBUG] Failed to notify server on disconnect: {ex.Message}");
+            }
+
             await connection.StopAsync();
             Debug.Log("[DEBUG] Disconnected from farm hub.");
         }
@@ -186,62 +198,28 @@ public class ProjectDawnApi : MonoBehaviour
         currentFarmId = null;
         currentPlayerId = 0;
 
-        // also clear spawned players
         if (playerManager != null)
             playerManager.ClearAllRemotePlayers();
     }
 
-    private async void OnDestroy()
+    private void OnApplicationQuit()
     {
+        Debug.Log("[DEBUG] Application quitting. Disconnecting...");
         Disconnect();
     }
-}
 
-/// <summary>
-/// Ensures Unity actions run on the main thread.
-/// </summary>
-public class MainThreadDispatcher : MonoBehaviour
-{
-    private static MainThreadDispatcher _instance;
-    private static readonly Queue<Action> _executionQueue = new Queue<Action>();
-
-    void Awake()
+    private void OnApplicationPause(bool pauseStatus)
     {
-        Application.runInBackground = true;
-
-        if (_instance == null)
+        if (pauseStatus)
         {
-            _instance = this;
-            DontDestroyOnLoad(this.gameObject);
-        }
-        else if (_instance != this)
-        {
-            Destroy(gameObject);
+            Debug.Log("[DEBUG] Application paused. Disconnecting...");
+            Disconnect();
         }
     }
 
-    void Update()
+    private void OnDestroy()
     {
-        lock (_executionQueue)
-        {
-            while (_executionQueue.Count > 0)
-            {
-                _executionQueue.Dequeue()?.Invoke();
-            }
-        }
-    }
-
-    public static void Enqueue(Action action)
-    {
-        if (_instance == null)
-        {
-            GameObject dispatcherObj = new GameObject("MainThreadDispatcher");
-            _instance = dispatcherObj.AddComponent<MainThreadDispatcher>();
-            DontDestroyOnLoad(dispatcherObj);
-        }
-        lock (_executionQueue)
-        {
-            _executionQueue.Enqueue(action);
-        }
+        Debug.Log("[DEBUG] OnDestroy called. Disconnecting...");
+        Disconnect();
     }
 }

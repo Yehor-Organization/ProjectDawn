@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection; // for IServiceScopeFactory
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ProjectDawnApi
 {
@@ -81,6 +82,31 @@ namespace ProjectDawnApi
         }
 
         /// <summary>
+        /// Explicit leave call from client (graceful exit).
+        /// </summary>
+        public async Task LeaveFarm(string farmIdStr, int playerId)
+        {
+            _logger.LogInformation($"Player {playerId} leaving farm {farmIdStr} (ConnectionId: {Context.ConnectionId})");
+
+            if (!int.TryParse(farmIdStr, out int farmId))
+                return;
+
+            var visitor = await _context.FarmVisitors
+                .FirstOrDefaultAsync(v => v.FarmId == farmId && v.PlayerId == playerId);
+
+            if (visitor != null)
+            {
+                _context.FarmVisitors.Remove(visitor);
+                await _context.SaveChangesAsync();
+
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, farmIdStr);
+                await Clients.OthersInGroup(farmIdStr).SendAsync("PlayerLeft", playerId);
+
+                _logger.LogInformation($"Player {playerId} removed from farm {farmIdStr}.");
+            }
+        }
+
+        /// <summary>
         /// Updates both position and rotation of a player.
         /// </summary>
         public async Task UpdatePlayerTransformation(string farmIdStr, int playerId, TransformationDataModel transformation)
@@ -95,19 +121,25 @@ namespace ProjectDawnApi
             }
         }
 
-
+        /// <summary>
+        /// Always runs when the connection is lost (app crash, kill, or network drop).
+        /// </summary>
         public override async Task OnDisconnectedAsync(Exception exception)
         {
+            _logger.LogInformation($"Connection {Context.ConnectionId} disconnected. Reason: {exception?.Message}");
+
             var visitor = await _context.FarmVisitors
                 .FirstOrDefaultAsync(v => v.ConnectionId == Context.ConnectionId);
 
             if (visitor != null)
             {
+                _context.FarmVisitors.Remove(visitor);
+                await _context.SaveChangesAsync();
+
                 await Clients.OthersInGroup(visitor.FarmId.ToString())
                     .SendAsync("PlayerLeft", visitor.PlayerId);
 
-                _context.FarmVisitors.Remove(visitor);
-                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Player {visitor.PlayerId} auto-removed from farm {visitor.FarmId} on disconnect.");
             }
 
             await base.OnDisconnectedAsync(exception);

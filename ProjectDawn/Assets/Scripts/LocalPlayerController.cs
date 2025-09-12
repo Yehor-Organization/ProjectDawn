@@ -13,19 +13,23 @@ public class LocalPlayerController : MonoBehaviour
 
     [Header("Networking")]
     private float positionUpdateThreshold;
+    private float rotationUpdateThreshold;
 
     private FixedJoystick joystick;
     private ProjectDawnApi networkClient;
     private Vector3 lastPosition;
+    private Vector3 lastRotation;
 
     /// <summary>
     /// Called by PlayerManager after spawning to configure speeds & thresholds.
     /// </summary>
-    public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold)
+    public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold, float protationUpdateThreshold)
     {
         this.moveSpeed = moveSpeed;
         this.rotateSpeed = rotateSpeed;
         this.positionUpdateThreshold = positionUpdateThreshold;
+        this.rotationUpdateThreshold = rotationUpdateThreshold;
+
     }
 
     void Start()
@@ -89,25 +93,25 @@ public class LocalPlayerController : MonoBehaviour
         }
 
         // --- Send Transformation Update ---
-        if (Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold)
+        bool moved = Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold;
+        bool rotated = Vector3.Distance(transform.rotation.eulerAngles, lastRotation) > rotationUpdateThreshold;
+
+        if (moved || rotated)
         {
-            if (networkClient != null)
+            lastPosition = transform.position;
+            lastRotation = transform.rotation.eulerAngles;
+
+            var transformation = new TransformationDataModel
             {
-                lastPosition = transform.position;
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                positionZ = transform.position.z,
+                rotationX = transform.rotation.eulerAngles.x,
+                rotationY = transform.rotation.eulerAngles.y,
+                rotationZ = transform.rotation.eulerAngles.z
+            };
 
-                // Build transformation object
-                var transformation = new TransformationDataModel
-                {
-                    positionX = transform.position.x,
-                    positionY = transform.position.y,
-                    positionZ = transform.position.z,
-                    rotationX = transform.rotation.eulerAngles.x,
-                    rotationY = transform.rotation.eulerAngles.y,
-                    rotationZ = transform.rotation.eulerAngles.z
-                };
-
-                networkClient.SendTransformationUpdate(transformation);
-            }
+            networkClient.SendTransformationUpdate(transformation);
         }
     }
 

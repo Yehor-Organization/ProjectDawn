@@ -1,0 +1,11 @@
+<linker>
+  <assembly fullname="Microsoft.AspNetCore.SignalR.Client.Core">
+    <type fullname="*" preserve="all"/>
+  </assembly>
+  <assembly fullname="System.Net.Http">
+    <type fullname="*" preserve="all"/>
+  </assembly>
+  <assembly fullname="System.Net.Primitives">
+    <type fullname="*" preserve="all"/>
+  </assembly>
+</linker>

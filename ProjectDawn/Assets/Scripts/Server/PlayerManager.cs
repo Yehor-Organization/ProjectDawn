@@ -20,6 +20,7 @@ public class PlayerManager : MonoBehaviour
 
     [Tooltip("Minimum distance change before sending a position update.")]
     public float positionUpdateThreshold = 0.01f;
+    public float rotationUpdateThreshold = 0.01f;
 
     // Track remote players by their ID
     private readonly Dictionary<int, GameObject> remotePlayers = new Dictionary<int, GameObject>();
@@ -36,7 +37,7 @@ public class PlayerManager : MonoBehaviour
                 if (localCtrl != null)
                 {
                     // ✅ Use the initializer instead of touching fields directly
-                    localCtrl.Initialize(defaultMoveSpeed, defaultRotateSpeed, positionUpdateThreshold);
+                    localCtrl.Initialize(defaultMoveSpeed, defaultRotateSpeed, positionUpdateThreshold, rotationUpdateThreshold);
                 }
                 else
                 {
