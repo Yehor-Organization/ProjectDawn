@@ -623,5 +623,3 @@ MonoBehaviour:
   farmNameText: {fileID: 3386330857319028235}
   ownerNameText: {fileID: 7405268695270126772}
   joinButton: {fileID: 5288023630371857427}
-  farmsListUI: {fileID: 0}
-  joystickUI: {fileID: 0}

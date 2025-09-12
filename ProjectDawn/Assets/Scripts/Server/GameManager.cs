@@ -19,15 +19,26 @@ public class GameManager : MonoBehaviour
 
     [Header("Component References")]
     public ProjectDawnApi realTimeClient;
-
+    
     void Awake()
     {
+        // Make sure this object persists across scene loads
+        DontDestroyOnLoad(gameObject);
+
+        // Optional: ensure only one GameManager exists
+        if (FindObjectsOfType<GameManager>().Length > 1)
+        {
+            Destroy(gameObject); // Destroy duplicates
+            return;
+        }
+
         foreach (var mapping in objectPrefabs)
         {
             if (mapping.prefab != null && !string.IsNullOrEmpty(mapping.typeKey))
                 prefabDictionary[mapping.typeKey] = mapping.prefab;
         }
     }
+
 
     public void JoinFarm(string newFarmId)
     {
