@@ -86,38 +86,6 @@
 
             context.SaveChanges();
 
-            // Seed initial visitors with transformation
-            context.FarmVisitors.AddRange(
-                new FarmVisitorDataModel
-                {
-                    FarmId = farm1.Id,
-                    PlayerId = player3.Id,
-                    Transformation = new TransformationDataModel
-                    {
-                        positionX = 5f,
-                        positionY = 0f,
-                        positionZ = 5f,
-                        rotationX = 0f,
-                        rotationY = 0f,
-                        rotationZ = 0f
-                    }
-                },
-                new FarmVisitorDataModel
-                {
-                    FarmId = farm2.Id,
-                    PlayerId = player1.Id,
-                    Transformation = new TransformationDataModel
-                    {
-                        positionX = 1f,
-                        positionY = 0f,
-                        positionZ = 2f,
-                        rotationX = 0f,
-                        rotationY = 0f,
-                        rotationZ = 0f
-                    }
-                }
-            );
-
             context.SaveChanges();
         }
     }

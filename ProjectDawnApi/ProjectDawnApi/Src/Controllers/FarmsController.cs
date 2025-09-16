@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,22 +17,31 @@ namespace ProjectDawnApi
             _context = context;
         }
 
+        // GET: api/farms
         [HttpGet]
-        public async Task<IActionResult> GetFarms()
+        public async Task<ActionResult<IEnumerable<object>>> GetFarms()
         {
             var farms = await _context.Farms
                 .Include(f => f.Owner)
+                .Include(f => f.Visitors)
+                    .ThenInclude(v => v.PlayerDataModel) // 👈 include the right nav property
                 .Select(f => new
                 {
-                    f.Id,
-                    f.Name,
-                    OwnerName = f.Owner != null ? f.Owner.Name : "N/A"
+                    id = f.Id,
+                    name = f.Name,
+                    ownerName = f.Owner != null ? f.Owner.Name : "N/A",
+                    visitors = f.Visitors.Select(v => new VisitorSummaryDataModel
+                    {
+                        playerId = v.PlayerId,
+                        playerName = v.PlayerDataModel != null ? v.PlayerDataModel.Name : "Unknown"
+                    }).ToList()
                 })
                 .ToListAsync();
 
             return Ok(farms);
         }
 
+        // GET: api/farms/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetFarm(int id)
         {
@@ -41,7 +51,7 @@ namespace ProjectDawnApi
                 .Include(f => f.Visitors)
                     .ThenInclude(v => v.PlayerDataModel)
                 .Where(f => f.Id == id)
-                .AsNoTracking() // 👈 prevents tracking issues
+                .AsNoTracking()
                 .Select(f => new
                 {
                     f.Id,
@@ -51,7 +61,7 @@ namespace ProjectDawnApi
                     {
                         po.Id,
                         po.Type,
-                        Transformation = new // 👈 project fields manually
+                        Transformation = new
                         {
                             po.Transformation.positionX,
                             po.Transformation.positionY,
@@ -65,7 +75,7 @@ namespace ProjectDawnApi
                     {
                         v.PlayerId,
                         PlayerName = v.PlayerDataModel != null ? v.PlayerDataModel.Name : "Unknown",
-                        Transformation = new // 👈 project fields manually
+                        Transformation = new
                         {
                             v.Transformation.positionX,
                             v.Transformation.positionY,

@@ -6,6 +6,7 @@ public class FarmListItemUI : MonoBehaviour
 {
     [SerializeField] private TMP_Text farmNameText;
     [SerializeField] private TMP_Text ownerNameText;
+    [SerializeField] private TMP_Text visitorCountText;
     [SerializeField] private Button joinButton;
 
     private string farmId;
@@ -20,6 +21,9 @@ public class FarmListItemUI : MonoBehaviour
 
         farmNameText.text = farm.name;
         ownerNameText.text = $"Owner: {farm.ownerName}";
+
+        int visitors = (farm.visitors != null) ? farm.visitors.Count : 0;
+        visitorCountText.text = $"Visitors: {visitors}";
 
         joinButton.onClick.RemoveAllListeners();
         joinButton.onClick.AddListener(JoinFarm);

@@ -8,7 +8,16 @@ public class FarmInfo
     public int id;
     public string name;
     public string ownerName;
+    public List<VisitorInfo> visitors;
 }
+
+[System.Serializable]
+public class VisitorInfo
+{
+    public int playerId;
+    public string playerName;
+}
+
 
 [System.Serializable]
 public class FarmState
@@ -17,6 +26,8 @@ public class FarmState
     public string name;
     public string ownerName;
     public List<PlacedObject> placedObjects;
+    public List<VisitorInfo> visitors;
+
 }
 
 [System.Serializable]
