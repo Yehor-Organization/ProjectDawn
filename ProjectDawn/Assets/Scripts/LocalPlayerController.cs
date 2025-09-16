@@ -82,9 +82,9 @@ public class LocalPlayerController : MonoBehaviour
             joystickDir = new Vector3(joystick.Horizontal, 0, joystick.Vertical);
             if (joystickDir.magnitude > 0.1f)
             {
-                // Smoothly rotate toward joystick direction
+                // 🔥 Instant rotation toward joystick direction
                 Quaternion targetRotation = Quaternion.LookRotation(joystickDir.normalized);
-                rb.MoveRotation(Quaternion.RotateTowards(rb.rotation, targetRotation, rotateSpeed * Time.fixedDeltaTime));
+                rb.MoveRotation(targetRotation);
 
                 v = joystickDir.magnitude;
                 h = 0f; // disable keyboard rotation while joystick is active
@@ -94,7 +94,7 @@ public class LocalPlayerController : MonoBehaviour
         // --- Movement using velocity (safe collisions) ---
         if (v != 0)
         {
-            rb.linearVelocity = transform.forward * v * moveSpeed + new Vector3(0, rb.linearVelocity.y, 0); 
+            rb.linearVelocity = transform.forward * v * moveSpeed + new Vector3(0, rb.linearVelocity.y, 0);
         }
         else
         {
