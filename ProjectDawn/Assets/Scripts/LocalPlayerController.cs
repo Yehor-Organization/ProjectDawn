@@ -1,62 +1,66 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class LocalPlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    private float moveSpeed;
-    private float rotateSpeed;
+    public float moveSpeed = 5f;
+    public float rotateSpeed = 200f;
 
     [Header("Camera")]
     private Vector3 cameraOffset;
     private Camera playerCamera;
 
     [Header("Networking")]
-    private float positionUpdateThreshold;
-    private float rotationUpdateThreshold;
+    public float positionUpdateThreshold = 0.05f;
+    public float rotationUpdateThreshold = 1f;
 
     private FixedJoystick joystick;
     private ProjectDawnApi networkClient;
     private Vector3 lastPosition;
     private Vector3 lastRotation;
 
+    private Rigidbody rb;
+
     /// <summary>
     /// Called by PlayerManager after spawning to configure speeds & thresholds.
     /// </summary>
-    public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold, float protationUpdateThreshold)
+    public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold, float rotationUpdateThreshold)
     {
         this.moveSpeed = moveSpeed;
         this.rotateSpeed = rotateSpeed;
         this.positionUpdateThreshold = positionUpdateThreshold;
         this.rotationUpdateThreshold = rotationUpdateThreshold;
-
     }
 
     void Start()
     {
-        // Setup camera
+        // Rigidbody setup
+        rb = GetComponent<Rigidbody>();
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+        // Camera
         playerCamera = Camera.main;
         if (playerCamera != null)
         {
-            // Auto-calculate offset based on how the camera is placed in the editor
             cameraOffset = playerCamera.transform.position - transform.position;
             playerCamera.transform.LookAt(transform.position);
         }
 
         // Joystick lookup
         joystick = FindObjectOfType<FixedJoystick>();
-        if (joystick == null)
-            Debug.LogWarning("No joystick found in scene!");
 
         // Network client lookup
         networkClient = FindObjectOfType<ProjectDawnApi>();
-        if (networkClient == null)
-            Debug.LogError("Could not find ProjectDawnApi script in the scene!");
 
         lastPosition = transform.position;
+        lastRotation = transform.rotation.eulerAngles;
     }
 
-    void Update()
+    void FixedUpdate()
     {
         float h = 0f;
         float v = 0f;
@@ -78,21 +82,33 @@ public class LocalPlayerController : MonoBehaviour
             joystickDir = new Vector3(joystick.Horizontal, 0, joystick.Vertical);
             if (joystickDir.magnitude > 0.1f)
             {
-                transform.forward = joystickDir.normalized;  // snap forward to joystick direction
+                // Smoothly rotate toward joystick direction
+                Quaternion targetRotation = Quaternion.LookRotation(joystickDir.normalized);
+                rb.MoveRotation(Quaternion.RotateTowards(rb.rotation, targetRotation, rotateSpeed * Time.fixedDeltaTime));
+
                 v = joystickDir.magnitude;
-                h = 0f;
+                h = 0f; // disable keyboard rotation while joystick is active
             }
         }
 
-        // --- Apply Movement ---
-        transform.position += transform.forward * v * moveSpeed * Time.deltaTime;
-
-        if (h != 0f && joystickDir.magnitude <= 0.1f)
+        // --- Movement using velocity (safe collisions) ---
+        if (v != 0)
         {
-            transform.Rotate(Vector3.up * h * rotateSpeed * Time.deltaTime);
+            rb.linearVelocity = transform.forward * v * moveSpeed + new Vector3(0, rb.linearVelocity.y, 0); 
+        }
+        else
+        {
+            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0); // stop horizontal motion, keep gravity
         }
 
-        // --- Send Transformation Update ---
+        // --- Rotation from keyboard (if no joystick) ---
+        if (h != 0f && joystickDir.magnitude <= 0.1f)
+        {
+            Quaternion turn = Quaternion.Euler(Vector3.up * h * rotateSpeed * Time.fixedDeltaTime);
+            rb.MoveRotation(rb.rotation * turn);
+        }
+
+        // --- Networking Sync ---
         bool moved = Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold;
         bool rotated = Vector3.Distance(transform.rotation.eulerAngles, lastRotation) > rotationUpdateThreshold;
 
@@ -111,7 +127,8 @@ public class LocalPlayerController : MonoBehaviour
                 rotationZ = transform.rotation.eulerAngles.z
             };
 
-            networkClient.SendTransformationUpdate(transformation);
+            if (networkClient != null)
+                networkClient.SendTransformationUpdate(transformation);
         }
     }
 

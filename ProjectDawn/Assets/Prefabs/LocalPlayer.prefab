@@ -45,9 +45,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15968d4fa04ae6a439a3dbfdd578b76d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalPlayerController
-  moveSpeed: 15
-  rotateSpeed: 200
-  cameraOffset: {x: 0, y: 10, z: -8}
 --- !u!1 &4183716555514273602
 GameObject:
   m_ObjectHideFlags: 0
@@ -59,7 +56,7 @@ GameObject:
   - component: {fileID: 3550064278183151096}
   - component: {fileID: 498640839567084125}
   - component: {fileID: 2382246398448303767}
-  - component: {fileID: 4971083592771692081}
+  - component: {fileID: 1369157115781685134}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -138,8 +135,8 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &4971083592771692081
-MeshCollider:
+--- !u!65 &1369157115781685134
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -156,7 +153,6 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: -5495902117074765545, guid: 0a0b8cb83f01d80438b78d348905df31, type: 3}
+  serializedVersion: 3
+  m_Size: {x: 2.8488514, y: 2.6884646, z: 2.949103}
+  m_Center: {x: 0, y: 1.3442323, z: 0}
