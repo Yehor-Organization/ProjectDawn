@@ -16,7 +16,7 @@ public class PlayerManager : MonoBehaviour
     public float defaultMoveSpeed = 15f;
 
     [Tooltip("Default rotation speed for all players.")]
-    public float defaultRotateSpeed = 200f;
+    public float defaultRotateSpeed = 300f;
 
     [Tooltip("Minimum distance change before sending a position update.")]
     public float positionUpdateThreshold = 0.01f;
@@ -25,6 +25,9 @@ public class PlayerManager : MonoBehaviour
     // Track remote players by their ID
     private readonly Dictionary<int, GameObject> remotePlayers = new Dictionary<int, GameObject>();
 
+    /// <summary>
+    /// Spawns either a local or remote player.
+    /// </summary>
     public void SpawnPlayer(int playerId, bool isLocalPlayer)
     {
         if (isLocalPlayer)
@@ -36,7 +39,6 @@ public class PlayerManager : MonoBehaviour
                 var localCtrl = go.GetComponent<LocalPlayerController>();
                 if (localCtrl != null)
                 {
-                    // ✅ Use the initializer instead of touching fields directly
                     localCtrl.Initialize(defaultMoveSpeed, defaultRotateSpeed, positionUpdateThreshold, rotationUpdateThreshold);
                 }
                 else
@@ -72,6 +74,9 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Removes a remote player by ID.
+    /// </summary>
     public void RemovePlayer(int playerId)
     {
         if (remotePlayers.TryGetValue(playerId, out GameObject playerGO))
@@ -82,6 +87,9 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Clears all remote players from the scene.
+    /// </summary>
     public void ClearAllRemotePlayers()
     {
         foreach (var kvp in remotePlayers)
@@ -92,7 +100,9 @@ public class PlayerManager : MonoBehaviour
         remotePlayers.Clear();
     }
 
-
+    /// <summary>
+    /// Updates a remote player’s position/rotation from the network.
+    /// </summary>
     public void UpdatePlayerTransformation(int playerId, TransformationDataModel newTransformation)
     {
         if (remotePlayers.TryGetValue(playerId, out GameObject playerObj))

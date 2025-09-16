@@ -7,6 +7,7 @@ public class LocalPlayerController : MonoBehaviour
     [Header("Movement")]
     public float moveSpeed = 5f;
     public float rotateSpeed = 200f;
+    public bool instantRotation = false; // true = snap instantly, false = smooth turning
 
     [Header("Camera")]
     private Vector3 cameraOffset;
@@ -24,7 +25,7 @@ public class LocalPlayerController : MonoBehaviour
     private Rigidbody rb;
 
     /// <summary>
-    /// Called by PlayerManager after spawning to configure speeds & thresholds.
+    /// Configures movement/rotation thresholds for this player.
     /// </summary>
     public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold, float rotationUpdateThreshold)
     {
@@ -36,13 +37,13 @@ public class LocalPlayerController : MonoBehaviour
 
     void Start()
     {
-        // Rigidbody setup
         rb = GetComponent<Rigidbody>();
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+        // ✅ Prevent physics spin, allow collisions to stop movement
+        rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-        // Camera
         playerCamera = Camera.main;
         if (playerCamera != null)
         {
@@ -50,10 +51,7 @@ public class LocalPlayerController : MonoBehaviour
             playerCamera.transform.LookAt(transform.position);
         }
 
-        // Joystick lookup
         joystick = FindObjectOfType<FixedJoystick>();
-
-        // Network client lookup
         networkClient = FindObjectOfType<ProjectDawnApi>();
 
         lastPosition = transform.position;
@@ -62,50 +60,51 @@ public class LocalPlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        float h = 0f;
-        float v = 0f;
+        Vector3 inputDir = Vector3.zero;
 
-        // --- Keyboard input ---
+        // --- Keyboard input as direction ---
         var keyboard = Keyboard.current;
         if (keyboard != null)
         {
-            if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) v += 1f;
-            if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) v -= 1f;
-            if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) h -= 1f;
-            if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) h += 1f;
+            if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) inputDir += Vector3.forward;
+            if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) inputDir += Vector3.back;
+            if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) inputDir += Vector3.left;
+            if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) inputDir += Vector3.right;
         }
+
+        // Normalize keyboard vector
+        if (inputDir.sqrMagnitude > 1f)
+            inputDir.Normalize();
 
         // --- Joystick input ---
         Vector3 joystickDir = Vector3.zero;
         if (joystick != null)
         {
             joystickDir = new Vector3(joystick.Horizontal, 0, joystick.Vertical);
-            if (joystickDir.magnitude > 0.1f)
-            {
-                // 🔥 Instant rotation toward joystick direction
-                Quaternion targetRotation = Quaternion.LookRotation(joystickDir.normalized);
-                rb.MoveRotation(targetRotation);
-
-                v = joystickDir.magnitude;
-                h = 0f; // disable keyboard rotation while joystick is active
-            }
         }
 
-        // --- Movement using velocity (safe collisions) ---
-        if (v != 0)
+        // Prefer joystick if active
+        Vector3 moveDir = joystickDir.magnitude > 0.1f ? joystickDir : inputDir;
+
+        // --- Movement & Rotation ---
+        if (moveDir.magnitude > 0.1f)
         {
-            rb.linearVelocity = transform.forward * v * moveSpeed + new Vector3(0, rb.linearVelocity.y, 0);
+            Vector3 worldDir = new Vector3(moveDir.x, 0, moveDir.z).normalized;
+
+            // Rotate
+            Quaternion targetRotation = Quaternion.LookRotation(worldDir);
+            if (instantRotation)
+                rb.MoveRotation(targetRotation);
+            else
+                rb.MoveRotation(Quaternion.RotateTowards(rb.rotation, targetRotation, rotateSpeed * Time.fixedDeltaTime));
+
+            // ✅ Use velocity for proper collisions
+            rb.linearVelocity = new Vector3(worldDir.x * moveSpeed, rb.linearVelocity.y, worldDir.z * moveSpeed);
         }
         else
         {
-            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0); // stop horizontal motion, keep gravity
-        }
-
-        // --- Rotation from keyboard (if no joystick) ---
-        if (h != 0f && joystickDir.magnitude <= 0.1f)
-        {
-            Quaternion turn = Quaternion.Euler(Vector3.up * h * rotateSpeed * Time.fixedDeltaTime);
-            rb.MoveRotation(rb.rotation * turn);
+            // Idle → keep gravity
+            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
         }
 
         // --- Networking Sync ---

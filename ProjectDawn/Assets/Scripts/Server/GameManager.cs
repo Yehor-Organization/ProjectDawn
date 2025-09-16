@@ -3,6 +3,8 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -19,8 +21,42 @@ public class GameManager : MonoBehaviour
 
     [Header("Component References")]
     public ProjectDawnApi realTimeClient;
-    
-    void Awake()
+
+    public GameObject Menu;
+    public GameObject Joystick;
+    public Button SettingsButton;
+
+
+    void Start()
+    {
+        if (SettingsButton != null)
+            SettingsButton.onClick.AddListener(ToggleMenu);
+    }
+
+    void Update()
+    {
+        // Esc key toggle
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            ToggleMenu();
+        }
+    }
+
+    private void ToggleMenu()
+    {
+        if (Menu == null) return;
+
+        bool isActive = Menu.activeSelf;
+        Menu.SetActive(!isActive);
+
+        if (Joystick != null)
+            Joystick.SetActive(isActive);
+    }
+
+
+
+
+void Awake()
     {
         // Make sure this object persists across scene loads
         DontDestroyOnLoad(gameObject);
