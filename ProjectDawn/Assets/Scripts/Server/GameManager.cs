@@ -88,9 +88,8 @@ public class GameManager : MonoBehaviour
             Joystick.SetActive(isActive);
     }
 
-    public async void JoinFarm(string newFarmId)
+    public async Task<bool> JoinFarm(string newFarmId)
     {
-        // ✅ If already in a farm → leave first
         if (!string.IsNullOrEmpty(farmId))
         {
             Debug.Log($"[GameManager] Already connected to farm {farmId}. Leaving before joining {newFarmId}...");
@@ -100,7 +99,46 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[GameManager] Joining farm: {newFarmId}");
         farmId = newFarmId;
 
-        StartCoroutine(LoadFarmStateAndConnect());
+        string url = $"{serverBaseUrl}/api/Farms/{farmId}";
+        using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
+        {
+            webRequest.certificateHandler = new BypassCertificate();
+            await webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.Success)
+            {
+                string jsonResponse = webRequest.downloadHandler.text;
+                FarmState farmData = JsonConvert.DeserializeObject<FarmState>(jsonResponse);
+                BuildFarm(farmData);
+
+                if (realTimeClient != null)
+                {
+                    bool success = await realTimeClient.ConnectAndJoin(serverBaseUrl, farmId, playerId);
+                    if (success)
+                    {
+                        Debug.Log("[GameManager] Successfully joined farm.");
+                        return true;
+                    }
+                    else
+                    {
+                        Debug.LogError("[GameManager] Failed to join farm (server rejected or connection issue).");
+                        farmId = null; // reset
+                        ClearFarm();
+                        return false;
+                    }
+                }
+                else
+                {
+                    Debug.LogError("RealTimeClient (ProjectDawnApi) is not assigned!");
+                    return false;
+                }
+            }
+            else
+            {
+                Debug.LogError($"Failed to fetch farm state: {webRequest.error}");
+                return false;
+            }
+        }
     }
 
 

@@ -29,12 +29,14 @@ public class FarmListItemUI : MonoBehaviour
         joinButton.onClick.AddListener(JoinFarm);
     }
 
-    private void JoinFarm()
+    private async void JoinFarm()
     {
         Debug.Log($"[DEBUG][FarmListItemUI] Joining farm {farmId}...");
-        gameManager.JoinFarm(farmId);
+        bool joinedSuccessfully = await gameManager.JoinFarm(farmId);
 
-        // ✅ Tell the parent UI that a farm was joined
-        farmListUI.FarmJoined();
+        if (joinedSuccessfully)
+        {
+            farmListUI.FarmJoined();
+        }
     }
 }
