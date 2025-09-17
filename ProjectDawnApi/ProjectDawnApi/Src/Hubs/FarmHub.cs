@@ -44,6 +44,7 @@ namespace ProjectDawnApi
             {
                 _logger.LogWarning($"Player {playerId} does not exist.");
                 await Clients.Caller.SendAsync("JoinFarmFailed", "Player does not exist.");
+                Context.Abort(); // force-disconnect
                 return;
             }
 

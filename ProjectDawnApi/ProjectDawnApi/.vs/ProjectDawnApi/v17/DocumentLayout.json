@@ -1,0 +1,23 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\",
+  "Documents": [],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{4c6a820c-6b64-3d43-8d5e-1c2cc7b5e916}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
