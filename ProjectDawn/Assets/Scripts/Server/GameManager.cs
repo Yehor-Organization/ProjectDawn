@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using TMPro;
+using System.Threading.Tasks;
 
 public class GameManager : MonoBehaviour
 {
@@ -13,7 +15,8 @@ public class GameManager : MonoBehaviour
 
     [Header("Game State")]
     public string farmId;
-    public int playerId = 101;
+    [SerializeField] private int playerId = 1;
+    public TMP_InputField playerIdInput;  // assign in Inspector
 
     [Header("Object Prefabs")]
     public List<ObjectPrefabMapping> objectPrefabs = new List<ObjectPrefabMapping>();
@@ -26,19 +29,51 @@ public class GameManager : MonoBehaviour
     public GameObject Joystick;
     public Button SettingsButton;
 
+    void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
+
+        if (FindObjectsOfType<GameManager>().Length > 1)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        foreach (var mapping in objectPrefabs)
+        {
+            if (mapping.prefab != null && !string.IsNullOrEmpty(mapping.typeKey))
+                prefabDictionary[mapping.typeKey] = mapping.prefab;
+        }
+    }
 
     void Start()
     {
+        playerIdInput.text = playerId.ToString();
         if (SettingsButton != null)
             SettingsButton.onClick.AddListener(ToggleMenu);
+
+        if (playerIdInput != null)
+            playerIdInput.onValueChanged.AddListener(OnPlayerIdChanged);
     }
 
     void Update()
     {
-        // Esc key toggle
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             ToggleMenu();
+        }
+    }
+
+    private void OnPlayerIdChanged(string newValue)
+    {
+        if (int.TryParse(newValue, out int parsedId))
+        {
+            playerId = parsedId;
+            Debug.Log($"[GameManager] Player ID updated: {playerId}");
+        }
+        else
+        {
+            Debug.LogWarning("[GameManager] Invalid Player ID input (not an integer).");
         }
     }
 
@@ -53,31 +88,10 @@ public class GameManager : MonoBehaviour
             Joystick.SetActive(isActive);
     }
 
-
-
-
-void Awake()
+    public async void JoinFarm(string newFarmId)
     {
-        // Make sure this object persists across scene loads
-        DontDestroyOnLoad(gameObject);
+        Debug.Log($"[GameManager] Joining farm: {newFarmId}");
 
-        // Optional: ensure only one GameManager exists
-        if (FindObjectsOfType<GameManager>().Length > 1)
-        {
-            Destroy(gameObject); // Destroy duplicates
-            return;
-        }
-
-        foreach (var mapping in objectPrefabs)
-        {
-            if (mapping.prefab != null && !string.IsNullOrEmpty(mapping.typeKey))
-                prefabDictionary[mapping.typeKey] = mapping.prefab;
-        }
-    }
-
-
-    public void JoinFarm(string newFarmId)
-    {
         farmId = newFarmId;
         StartCoroutine(LoadFarmStateAndConnect());
     }
@@ -98,7 +112,7 @@ void Awake()
                 string jsonResponse = webRequest.downloadHandler.text;
                 FarmState farmData = JsonConvert.DeserializeObject<FarmState>(jsonResponse);
 
-                BuildWorld(farmData);
+                BuildFarm(farmData);
 
                 if (realTimeClient != null)
                     realTimeClient.ConnectAndJoin(serverBaseUrl, farmId, playerId);
@@ -112,12 +126,11 @@ void Awake()
         }
     }
 
-    public void LeaveFarm()
+    public async void LeaveFarm()
     {
         Debug.Log("[GameManager] Leaving current farm...");
 
-        foreach (Transform child in transform)
-            Destroy(child.gameObject);
+        ClearFarm();
 
         if (realTimeClient != null)
             realTimeClient.Disconnect();
@@ -125,10 +138,15 @@ void Awake()
         farmId = null;
     }
 
-    private void BuildWorld(FarmState farmData)
+    private void ClearFarm()
     {
         foreach (Transform child in transform)
             Destroy(child.gameObject);
+    }
+
+    private void BuildFarm(FarmState farmData)
+    {
+        ClearFarm();
 
         foreach (var placedObject in farmData.placedObjects)
         {

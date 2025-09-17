@@ -58,7 +58,7 @@ public class LocalPlayerController : MonoBehaviour
         lastRotation = transform.rotation.eulerAngles;
     }
 
-    void FixedUpdate()
+    async void FixedUpdate()
     {
         Vector3 inputDir = Vector3.zero;
 
@@ -127,7 +127,7 @@ public class LocalPlayerController : MonoBehaviour
             };
 
             if (networkClient != null)
-                networkClient.SendTransformationUpdate(transformation);
+                await networkClient.SendTransformationUpdate(transformation);
         }
     }
 

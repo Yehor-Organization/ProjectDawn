@@ -15,8 +15,12 @@ public class FarmListUI : MonoBehaviour
     void Start()
     {
         joystickUI.SetActive(false);
-        Debug.Log("[DEBUG][FarmListUI] Starting periodic farm fetch...");
-        StartCoroutine(FetchFarmsPeriodically(refreshPeroid)); 
+    }
+
+    void OnEnable()
+    {
+        Debug.Log("[DEBUG][FarmListUI] OnEnable → starting periodic farm fetch...");
+        StartCoroutine(FetchFarmsPeriodically(refreshPeroid));
     }
 
     private IEnumerator FetchFarmsPeriodically(float interval)
