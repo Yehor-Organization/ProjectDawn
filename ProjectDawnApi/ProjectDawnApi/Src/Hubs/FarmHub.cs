@@ -33,6 +33,7 @@ namespace ProjectDawnApi
             if (!int.TryParse(farmIdStr, out int farmId))
             {
                 _logger.LogWarning($"Invalid farmId: {farmIdStr}");
+                await Clients.Caller.SendAsync("JoinFarmFailed", "Invalid farm ID.");
                 return;
             }
 
@@ -42,9 +43,11 @@ namespace ProjectDawnApi
             if (player == null)
             {
                 _logger.LogWarning($"Player {playerId} does not exist.");
+                await Clients.Caller.SendAsync("JoinFarmFailed", "Player does not exist.");
                 return;
             }
 
+            // Only proceed if player exists
             await Groups.AddToGroupAsync(Context.ConnectionId, farmIdStr);
 
             var visitor = await _context.FarmVisitors
