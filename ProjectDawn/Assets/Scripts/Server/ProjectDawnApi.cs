@@ -199,7 +199,8 @@ public class ProjectDawnApi : MonoBehaviour
         currentPlayerId = 0;
 
         if (playerManager != null)
-            playerManager.ClearAllRemotePlayers();
+            playerManager.ClearAllPlayers();
+
     }
 
     private void OnApplicationQuit()

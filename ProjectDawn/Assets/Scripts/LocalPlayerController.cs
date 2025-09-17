@@ -11,7 +11,6 @@ public class LocalPlayerController : MonoBehaviour
 
     [Header("Camera")]
     private Vector3 cameraOffset;
-    private Camera playerCamera;
 
     [Header("Networking")]
     public float positionUpdateThreshold = 0.05f;
@@ -39,16 +38,18 @@ public class LocalPlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
 
-        // ✅ Prevent physics spin, allow collisions to stop movement
+        // reset physics
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
 
-        playerCamera = Camera.main;
-        if (playerCamera != null)
+        // ✅ adjust height to terrain (optional, good for safety)
+        if (Terrain.activeTerrain != null)
         {
-            cameraOffset = playerCamera.transform.position - transform.position;
-            playerCamera.transform.LookAt(transform.position);
+            float groundY = Terrain.activeTerrain.SampleHeight(transform.position);
+            transform.position = new Vector3(transform.position.x, groundY + 1f, transform.position.z);
         }
 
         joystick = FindObjectOfType<FixedJoystick>();
@@ -56,6 +57,14 @@ public class LocalPlayerController : MonoBehaviour
 
         lastPosition = transform.position;
         lastRotation = transform.rotation.eulerAngles;
+    }
+
+    /// <summary>
+    /// Called by CameraManager to assign the camera offset.
+    /// </summary>
+    public void SetCamera(Camera cam, Vector3 offset)
+    {
+        cameraOffset = offset;
     }
 
     async void FixedUpdate()
@@ -128,15 +137,6 @@ public class LocalPlayerController : MonoBehaviour
 
             if (networkClient != null)
                 await networkClient.SendTransformationUpdate(transformation);
-        }
-    }
-
-    void LateUpdate()
-    {
-        if (playerCamera != null)
-        {
-            playerCamera.transform.position = transform.position + cameraOffset;
-            playerCamera.transform.LookAt(transform.position);
         }
     }
 }

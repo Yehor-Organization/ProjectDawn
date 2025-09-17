@@ -90,11 +90,19 @@ public class GameManager : MonoBehaviour
 
     public async void JoinFarm(string newFarmId)
     {
-        Debug.Log($"[GameManager] Joining farm: {newFarmId}");
+        // ✅ If already in a farm → leave first
+        if (!string.IsNullOrEmpty(farmId))
+        {
+            Debug.Log($"[GameManager] Already connected to farm {farmId}. Leaving before joining {newFarmId}...");
+            LeaveFarm();
+        }
 
+        Debug.Log($"[GameManager] Joining farm: {newFarmId}");
         farmId = newFarmId;
+
         StartCoroutine(LoadFarmStateAndConnect());
     }
+
 
     private IEnumerator LoadFarmStateAndConnect()
     {
@@ -125,18 +133,21 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-
     public async void LeaveFarm()
     {
         Debug.Log("[GameManager] Leaving current farm...");
 
+        // ✅ Clear farm objects
         ClearFarm();
 
+        // ✅ Disconnect networking
         if (realTimeClient != null)
             realTimeClient.Disconnect();
 
+        // ✅ Reset state
         farmId = null;
     }
+
 
     private void ClearFarm()
     {
