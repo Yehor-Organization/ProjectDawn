@@ -10,7 +10,7 @@ public class FarmListUI : MonoBehaviour
     [SerializeField] private RectTransform farmListContainer;
     [SerializeField] private GameObject farmListItemPrefab;
     [SerializeField] private GameObject joystickUI;
-    [SerializeField] private float refreshPeroid = 10f;
+    [SerializeField] private float refreshPeroid = 1f;
 
     void Start()
     {

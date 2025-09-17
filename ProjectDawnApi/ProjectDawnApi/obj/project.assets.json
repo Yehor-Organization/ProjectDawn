@@ -3201,25 +3201,32 @@
     ]
   },
   "packageFolders": {
-    "/home/yskudilov/.nuget/packages/": {}
+    "C:\\Users\\yskud\\.nuget\\packages\\": {},
+    "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/yskudilov/Documents/GitHub/Project-Dawn/ProjectDawnApi/ProjectDawnApi/ProjectDawnApi.csproj",
+      "projectUniqueName": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\ProjectDawnApi.csproj",
       "projectName": "ProjectDawnApi",
-      "projectPath": "/home/yskudilov/Documents/GitHub/Project-Dawn/ProjectDawnApi/ProjectDawnApi/ProjectDawnApi.csproj",
-      "packagesPath": "/home/yskudilov/.nuget/packages/",
-      "outputPath": "/home/yskudilov/Documents/GitHub/Project-Dawn/ProjectDawnApi/ProjectDawnApi/obj/",
+      "projectPath": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\ProjectDawnApi.csproj",
+      "packagesPath": "C:\\Users\\yskud\\.nuget\\packages\\",
+      "outputPath": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "/home/yskudilov/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\yskud\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
       ],
       "sources": {
-        "/usr/lib/dotnet/library-packs": {},
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -3238,7 +3245,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.100"
+      "SdkAnalysisLevel": "9.0.300"
     },
     "frameworks": {
       "net9.0": {
@@ -3294,7 +3301,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/9.0.107/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
