@@ -61,6 +61,9 @@ namespace ProjectDawnApi
                 await Clients.Client(existingVisitor.ConnectionId)
                     .SendAsync("Kicked", "You have been logged out because you logged in elsewhere.");
 
+                // Small delay to let client handle it
+                await Task.Delay(500); // 0.5s is usually enough
+
                 // Remove old record
                 _context.FarmVisitors.Remove(existingVisitor);
                 await _context.SaveChangesAsync();
@@ -68,9 +71,10 @@ namespace ProjectDawnApi
                 // Remove from SignalR group
                 await Groups.RemoveFromGroupAsync(existingVisitor.ConnectionId, existingVisitor.FarmId.ToString());
 
-                // Let others in that farm know they left
+                // Let others know
                 await Clients.OthersInGroup(existingVisitor.FarmId.ToString())
                     .SendAsync("PlayerLeft", existingVisitor.PlayerId);
+
             }
 
             // Proceed with new session

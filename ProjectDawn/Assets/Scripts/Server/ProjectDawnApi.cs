@@ -19,9 +19,9 @@ public class ProjectDawnApi : MonoBehaviour
     private string currentFarmId;
     private int currentPlayerId;
 
-    /// <summary>
-    /// Called by the GameManager after the farm is chosen.
-    /// </summary>
+    [SerializeField]
+    private GameManager gameManager;
+
     public async Task<bool> ConnectAndJoin(string serverUrl, string farmId, int playerId)
     {
         this.currentFarmId = farmId;
@@ -35,7 +35,6 @@ public class ProjectDawnApi : MonoBehaviour
 
         try
         {
-            // ✅ Build the HubConnection
             connection = new HubConnectionBuilder()
                 .WithUrl($"{serverUrl}/farmHub", options =>
                 {
@@ -44,7 +43,7 @@ public class ProjectDawnApi : MonoBehaviour
                 .WithAutomaticReconnect()
                 .Build();
 
-            RegisterEventHandlers(); // wire up events after building
+            RegisterEventHandlers();
 
             Debug.Log("[DEBUG] Starting SignalR connection...");
             await connection.StartAsync();
@@ -67,6 +66,26 @@ public class ProjectDawnApi : MonoBehaviour
         }
     }
 
+    public async Task StopConnectionOnly()
+    {
+        if (connection != null)
+        {
+            try
+            {
+                if (connection.State == HubConnectionState.Connected)
+                    await connection.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[DEBUG] Error stopping connection: {ex.Message}");
+            }
+
+            connection = null;
+            currentFarmId = null;
+            currentPlayerId = 0;
+        }
+    }
+
     private void RegisterEventHandlers()
     {
         Debug.Log("[DEBUG] Registering SignalR event handlers...");
@@ -79,6 +98,42 @@ public class ProjectDawnApi : MonoBehaviour
                 playerManager.SpawnPlayer(joinedPlayerId, false);
             });
         });
+
+        connection.On<string>("Kicked", (reason) =>
+        {
+            Debug.LogWarning($"[SignalR] You were kicked: {reason}");
+
+            // Immediate Unity cleanup (synchronous)
+            if (gameManager != null)
+            {
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    Debug.LogWarning("[DEBUG] Calling ForceLeaveFarmImmediate()");
+                    gameManager.ForceLeaveFarmImmediate();
+                    Debug.LogWarning("[DEBUG] Kicked cleanup done");
+                });
+            }
+
+            // Now let SignalR stop in background
+            _ = StopConnectionOnly();
+        });
+
+
+        connection.Closed += (error) =>
+        {
+            Debug.LogWarning($"[DEBUG] Connection closed. Reason={error?.Message}");
+
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                if (gameManager != null)
+                {
+                    Debug.LogWarning("[DEBUG] Force leave farm (Closed)");
+                    gameManager.ForceLeaveFarmImmediate();
+                }
+            });
+
+            return Task.CompletedTask;
+        };
 
         connection.On<List<int>>("InitialPlayers", playerIds =>
         {
@@ -116,14 +171,9 @@ public class ProjectDawnApi : MonoBehaviour
 
         connection.Reconnected += async (connectionId) =>
         {
-            MainThreadDispatcher.Enqueue(() => Debug.Log($"[DEBUG] SignalR reconnected. New ConnectionId={connectionId}"));
+            MainThreadDispatcher.Enqueue(() =>
+                Debug.Log($"[DEBUG] SignalR reconnected. New ConnectionId={connectionId}"));
             await JoinFarmGroup();
-        };
-
-        connection.Closed += async (error) =>
-        {
-            Debug.LogWarning($"[DEBUG] Connection closed. Reason={error?.Message}");
-            await Task.Delay(2000);
         };
 
         connection.Reconnecting += (error) =>
@@ -156,7 +206,6 @@ public class ProjectDawnApi : MonoBehaviour
             return false;
         }
     }
-
 
     public async Task SendTransformationUpdate(TransformationDataModel transformation)
     {
@@ -197,7 +246,6 @@ public class ProjectDawnApi : MonoBehaviour
 
         if (playerManager != null)
             playerManager.ClearAllPlayers();
-
     }
 
     private void OnApplicationQuit()

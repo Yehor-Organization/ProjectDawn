@@ -93,7 +93,7 @@ public class GameManager : MonoBehaviour
         if (!string.IsNullOrEmpty(farmId))
         {
             Debug.Log($"[GameManager] Already connected to farm {farmId}. Leaving before joining {newFarmId}...");
-            LeaveFarm();
+            ResetToMenu();
         }
 
         Debug.Log($"[GameManager] Joining farm: {newFarmId}");
@@ -122,24 +122,47 @@ public class GameManager : MonoBehaviour
                     else
                     {
                         Debug.LogError("[GameManager] Failed to join farm (server rejected or connection issue).");
-                        farmId = null; // reset
-                        ClearFarm();
+                        ResetToMenu(); // instead of farmId=null + ClearFarm()
                         return false;
                     }
                 }
                 else
                 {
                     Debug.LogError("RealTimeClient (ProjectDawnApi) is not assigned!");
+                    ResetToMenu();
                     return false;
                 }
             }
             else
             {
                 Debug.LogError($"Failed to fetch farm state: {webRequest.error}");
+                ResetToMenu();
                 return false;
             }
         }
     }
+
+
+    public void ResetToMenu()
+    {
+        Debug.Log("[GameManager] Resetting game state to menu...");
+
+        // Clear farm objects + disconnect networking
+        LeaveFarm();
+
+        // Show farm selection again
+        var farmUI = FindObjectOfType<FarmListUI>();
+        if (farmUI != null)
+            farmUI.gameObject.SetActive(true);
+
+        // Hide joystick if it exists
+        if (Joystick != null)
+            Joystick.SetActive(false);
+
+        // Reset farmId just to be safe
+        farmId = null;
+    }
+
 
 
     private IEnumerator LoadFarmStateAndConnect()
@@ -185,6 +208,32 @@ public class GameManager : MonoBehaviour
         // ✅ Reset state
         farmId = null;
     }
+
+    public void ForceLeaveFarmImmediate()
+    {
+        Debug.Log("[GameManager] Force leaving farm immediately...");
+
+        // Clear players instantly
+        if (realTimeClient != null && realTimeClient.playerManager != null)
+        {
+            realTimeClient.playerManager.ClearAllPlayers();
+        }
+
+        // Clear farm objects instantly
+        ClearFarm();
+
+        // Reset state
+        farmId = null;
+
+        // Reset UI
+        if (Menu != null) Menu.SetActive(true);
+        if (Joystick != null) Joystick.SetActive(false);
+
+        // ❌ DO NOT call StopAsync here!
+        // Let ProjectDawnApi.StopConnectionOnly() run separately if needed
+    }
+
+
 
 
     private void ClearFarm()

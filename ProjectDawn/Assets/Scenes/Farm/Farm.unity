@@ -1279,7 +1279,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: 0.000030517578, y: 162.94833}
+  m_AnchoredPosition: {x: 0.000030517578, y: 294.9949}
   m_SizeDelta: {x: 0, y: 589.94}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &698236153
@@ -1941,8 +1941,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1623114221}
   m_HandleRect: {fileID: 1623114220}
   m_Direction: 2
-  m_Value: 127238.3
-  m_Size: 0
+  m_Value: -23.529411
+  m_Size: 0.99995446
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2845,6 +2845,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectDawnApi
   playerManager: {fileID: 1925903210}
+  gameManager: {fileID: 1925903209}
 --- !u!114 &1925903209
 MonoBehaviour:
   m_ObjectHideFlags: 0

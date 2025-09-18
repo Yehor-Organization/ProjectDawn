@@ -1,26 +1,59 @@
-using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.AspNetCore.Http.Connections;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
-/// Ensures Unity actions run on the main thread.
+/// Ensures that code coming from background threads (e.g. SignalR handlers)
+/// can be executed safely on Unity's main thread.
 /// </summary>
 public class MainThreadDispatcher : MonoBehaviour
 {
     private static MainThreadDispatcher _instance;
     private static readonly Queue<Action> _executionQueue = new Queue<Action>();
 
-    void Awake()
+    public static MainThreadDispatcher Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                var obj = new GameObject("MainThreadDispatcher");
+                _instance = obj.AddComponent<MainThreadDispatcher>();
+                DontDestroyOnLoad(obj);
+            }
+            return _instance;
+        }
+    }
+
+    /// <summary>
+    /// Enqueue an action to run on the main Unity thread during the next Update().
+    /// </summary>
+    public static void Enqueue(Action action)
+    {
+        if (action == null) return;
+
+        lock (_executionQueue)
+        {
+            _executionQueue.Enqueue(action);
+        }
+
+        // Ensure instance exists
+        if (_instance == null)
+        {
+            var obj = new GameObject("MainThreadDispatcher");
+            _instance = obj.AddComponent<MainThreadDispatcher>();
+            DontDestroyOnLoad(obj);
+        }
+    }
+
+    private void Awake()
     {
         Application.runInBackground = true;
 
         if (_instance == null)
         {
             _instance = this;
-            DontDestroyOnLoad(this.gameObject);
+            DontDestroyOnLoad(gameObject);
         }
         else if (_instance != this)
         {
@@ -28,28 +61,22 @@ public class MainThreadDispatcher : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         lock (_executionQueue)
         {
             while (_executionQueue.Count > 0)
             {
-                _executionQueue.Dequeue()?.Invoke();
+                try
+                {
+                    var action = _executionQueue.Dequeue();
+                    action?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[MainThreadDispatcher] Exception in queued action: {ex}");
+                }
             }
-        }
-    }
-
-    public static void Enqueue(Action action)
-    {
-        if (_instance == null)
-        {
-            GameObject dispatcherObj = new GameObject("MainThreadDispatcher");
-            _instance = dispatcherObj.AddComponent<MainThreadDispatcher>();
-            DontDestroyOnLoad(dispatcherObj);
-        }
-        lock (_executionQueue)
-        {
-            _executionQueue.Enqueue(action);
         }
     }
 }
