@@ -9,6 +9,12 @@ public class LocalPlayerController : MonoBehaviour
     public float rotateSpeed = 200f;
     public bool instantRotation = false; // true = snap instantly, false = smooth turning
 
+    [Header("Momentum Settings")]
+    [Range(0.01f, 1f)]
+    [SerializeField] private float movementInertia = 0.1f; // lower = heavier inertia, higher = snappy
+    [Range(0.01f, 1f)]
+    [SerializeField] private float rotationInertia = 0.15f; // lower = snappy, higher = sluggish
+
     [Header("Camera")]
     private Vector3 cameraOffset;
 
@@ -23,9 +29,10 @@ public class LocalPlayerController : MonoBehaviour
 
     private Rigidbody rb;
 
-    /// <summary>
-    /// Configures movement/rotation thresholds for this player.
-    /// </summary>
+    // --- Momentum state ---
+    private Vector3 currentVelocity; // movement momentum
+    private float rotationVelocity;  // rotation momentum
+
     public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold, float rotationUpdateThreshold)
     {
         this.moveSpeed = moveSpeed;
@@ -38,14 +45,12 @@ public class LocalPlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
 
-        // reset physics
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        // ✅ adjust height to terrain (optional, good for safety)
         if (Terrain.activeTerrain != null)
         {
             float groundY = Terrain.activeTerrain.SampleHeight(transform.position);
@@ -59,9 +64,6 @@ public class LocalPlayerController : MonoBehaviour
         lastRotation = transform.rotation.eulerAngles;
     }
 
-    /// <summary>
-    /// Called by CameraManager to assign the camera offset.
-    /// </summary>
     public void SetCamera(Camera cam, Vector3 offset)
     {
         cameraOffset = offset;
@@ -71,7 +73,6 @@ public class LocalPlayerController : MonoBehaviour
     {
         Vector3 inputDir = Vector3.zero;
 
-        // --- Keyboard input as direction ---
         var keyboard = Keyboard.current;
         if (keyboard != null)
         {
@@ -81,42 +82,25 @@ public class LocalPlayerController : MonoBehaviour
             if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) inputDir += Vector3.right;
         }
 
-        // Normalize keyboard vector
         if (inputDir.sqrMagnitude > 1f)
             inputDir.Normalize();
 
-        // --- Joystick input ---
         Vector3 joystickDir = Vector3.zero;
         if (joystick != null)
-        {
             joystickDir = new Vector3(joystick.Horizontal, 0, joystick.Vertical);
-        }
 
-        // Prefer joystick if active
         Vector3 moveDir = joystickDir.magnitude > 0.1f ? joystickDir : inputDir;
 
-        // --- Movement & Rotation ---
         if (moveDir.magnitude > 0.1f)
         {
-            Vector3 worldDir = new Vector3(moveDir.x, 0, moveDir.z).normalized;
-
-            // Rotate
-            Quaternion targetRotation = Quaternion.LookRotation(worldDir);
-            if (instantRotation)
-                rb.MoveRotation(targetRotation);
-            else
-                rb.MoveRotation(Quaternion.RotateTowards(rb.rotation, targetRotation, rotateSpeed * Time.fixedDeltaTime));
-
-            // ✅ Use velocity for proper collisions
-            rb.linearVelocity = new Vector3(worldDir.x * moveSpeed, rb.linearVelocity.y, worldDir.z * moveSpeed);
+            ApplyRotationMomentum(moveDir);
+            ApplyMovementMomentum(moveDir.normalized);
         }
         else
         {
-            // Idle → keep gravity
-            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
+            ApplyMovementMomentum(Vector3.zero);
         }
 
-        // --- Networking Sync ---
         bool moved = Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold;
         bool rotated = Vector3.Distance(transform.rotation.eulerAngles, lastRotation) > rotationUpdateThreshold;
 
@@ -138,5 +122,41 @@ public class LocalPlayerController : MonoBehaviour
             if (networkClient != null)
                 await networkClient.SendTransformationUpdate(transformation);
         }
+    }
+
+    private void ApplyRotationMomentum(Vector3 moveDir)
+    {
+        if (instantRotation)
+        {
+            rb.MoveRotation(Quaternion.LookRotation(moveDir));
+            return;
+        }
+
+        if (moveDir.sqrMagnitude < 0.01f) return;
+
+        float targetAngle = Mathf.Atan2(moveDir.x, moveDir.z) * Mathf.Rad2Deg;
+
+        float angle = Mathf.SmoothDampAngle(
+            rb.rotation.eulerAngles.y,
+            targetAngle,
+            ref rotationVelocity,
+            rotationInertia // Inspector-controlled
+        );
+
+        rb.MoveRotation(Quaternion.Euler(0, angle, 0));
+    }
+
+    private void ApplyMovementMomentum(Vector3 moveDir)
+    {
+        Vector3 targetVelocity = moveDir * moveSpeed;
+        targetVelocity.y = rb.linearVelocity.y;
+
+        currentVelocity = Vector3.Lerp(
+            rb.linearVelocity,
+            targetVelocity,
+            movementInertia // Inspector-controlled
+        );
+
+        rb.linearVelocity = currentVelocity;
     }
 }
