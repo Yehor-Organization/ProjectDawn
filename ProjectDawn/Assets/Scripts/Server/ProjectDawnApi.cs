@@ -102,20 +102,8 @@ public class ProjectDawnApi : MonoBehaviour
         connection.On<string>("Kicked", (reason) =>
         {
             Debug.LogWarning($"[SignalR] You were kicked: {reason}");
-
-            // Immediate Unity cleanup (synchronous)
-            if (gameManager != null)
-            {
-                MainThreadDispatcher.Enqueue(() =>
-                {
-                    Debug.LogWarning("[DEBUG] Calling ForceLeaveFarmImmediate()");
-                    gameManager.ForceLeaveFarmImmediate();
-                    Debug.LogWarning("[DEBUG] Kicked cleanup done");
-                });
-            }
-
-            // Now let SignalR stop in background
-            _ = StopConnectionOnly();
+            gameManager.ForceLeaveFarmImmediate();
+            StopConnectionOnly();
         });
 
 
