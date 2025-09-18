@@ -102,8 +102,11 @@ public class ProjectDawnApi : MonoBehaviour
         connection.On<string>("Kicked", (reason) =>
         {
             Debug.LogWarning($"[SignalR] You were kicked: {reason}");
-            gameManager.ForceLeaveFarmImmediate();
-            StopConnectionOnly();
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                gameManager.ForceLeaveFarmImmediate();
+                StopConnectionOnly();
+            });
         });
 
 

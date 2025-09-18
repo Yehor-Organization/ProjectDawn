@@ -11,20 +11,6 @@ public class MainThreadDispatcher : MonoBehaviour
     private static MainThreadDispatcher _instance;
     private static readonly Queue<Action> _executionQueue = new Queue<Action>();
 
-    public static MainThreadDispatcher Instance
-    {
-        get
-        {
-            if (_instance == null)
-            {
-                var obj = new GameObject("MainThreadDispatcher");
-                _instance = obj.AddComponent<MainThreadDispatcher>();
-                DontDestroyOnLoad(obj);
-            }
-            return _instance;
-        }
-    }
-
     /// <summary>
     /// Enqueue an action to run on the main Unity thread during the next Update().
     /// </summary>
