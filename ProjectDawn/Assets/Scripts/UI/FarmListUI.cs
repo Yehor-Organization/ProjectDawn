@@ -50,7 +50,7 @@ public class FarmListUI : MonoBehaviour
 
             Debug.Log($"[DEBUG][FarmListUI] Response received: {webRequest.downloadHandler.text}");
 
-            var farms = JsonConvert.DeserializeObject<List<FarmInfo>>(webRequest.downloadHandler.text);
+            var farms = JsonConvert.DeserializeObject<List<FarmInfoDto>>(webRequest.downloadHandler.text);
 
             if (farms == null)
             {
@@ -69,7 +69,7 @@ public class FarmListUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private void PopulateFarmList(List<FarmInfo> farms)
+    private void PopulateFarmList(List<FarmInfoDto> farms)
     {
         Debug.Log("[DEBUG][FarmListUI] Clearing old farm list items...");
         foreach (Transform child in farmListContainer)

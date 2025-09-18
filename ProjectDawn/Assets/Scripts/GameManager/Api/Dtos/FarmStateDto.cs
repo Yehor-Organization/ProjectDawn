@@ -6,7 +6,7 @@ public class FarmStateDto
     public int id;
     public string name;
     public string ownerName;
-    public List<PlacedObject> placedObjects;
+    public List<PlacedObjectDto> placedObjects;
     public List<VisitorInfoDto> visitors;
 
 }

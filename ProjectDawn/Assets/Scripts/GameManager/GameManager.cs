@@ -108,7 +108,7 @@ public class GameManager : MonoBehaviour
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
                 string jsonResponse = webRequest.downloadHandler.text;
-                FarmState farmData = JsonConvert.DeserializeObject<FarmState>(jsonResponse);
+                FarmStateDto farmData = JsonConvert.DeserializeObject<FarmStateDto>(jsonResponse);
                 BuildFarm(farmData);
 
                 if (realTimeClient != null)
@@ -179,7 +179,7 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("Successfully fetched farm state.");
                 string jsonResponse = webRequest.downloadHandler.text;
-                FarmState farmData = JsonConvert.DeserializeObject<FarmState>(jsonResponse);
+                FarmStateDto farmData = JsonConvert.DeserializeObject<FarmStateDto>(jsonResponse);
 
                 BuildFarm(farmData);
 
@@ -242,7 +242,7 @@ public class GameManager : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    private void BuildFarm(FarmState farmData)
+    private void BuildFarm(FarmStateDto farmData)
     {
         ClearFarm();
 
