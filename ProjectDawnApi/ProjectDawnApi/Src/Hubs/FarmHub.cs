@@ -44,34 +44,47 @@ namespace ProjectDawnApi
             {
                 _logger.LogWarning($"Player {playerId} does not exist.");
                 await Clients.Caller.SendAsync("JoinFarmFailed", "Player does not exist.");
-                Context.Abort(); // force-disconnect
+                Context.Abort();
                 return;
             }
 
-            // Only proceed if player exists
+            // Check if player already has an active session
+            var existingVisitor = await _context.FarmVisitors
+                .FirstOrDefaultAsync(v => v.PlayerId == playerId);
+
+            if (existingVisitor != null)
+            {
+                // Kick out the old connection
+                _logger.LogInformation($"Kicking out old session for player {playerId} (ConnId {existingVisitor.ConnectionId})");
+
+                // Notify old client
+                await Clients.Client(existingVisitor.ConnectionId)
+                    .SendAsync("Kicked", "You have been logged out because you logged in elsewhere.");
+
+                // Remove old record
+                _context.FarmVisitors.Remove(existingVisitor);
+                await _context.SaveChangesAsync();
+
+                // Remove from SignalR group
+                await Groups.RemoveFromGroupAsync(existingVisitor.ConnectionId, existingVisitor.FarmId.ToString());
+
+                // Let others in that farm know they left
+                await Clients.OthersInGroup(existingVisitor.FarmId.ToString())
+                    .SendAsync("PlayerLeft", existingVisitor.PlayerId);
+            }
+
+            // Proceed with new session
             await Groups.AddToGroupAsync(Context.ConnectionId, farmIdStr);
 
-            var visitor = await _context.FarmVisitors
-                .FirstOrDefaultAsync(v => v.FarmId == farmId && v.PlayerId == playerId);
-
-            if (visitor == null)
+            var visitor = new FarmVisitorDataModel
             {
-                visitor = new FarmVisitorDataModel
-                {
-                    FarmId = farmId,
-                    PlayerId = playerId,
-                    ConnectionId = Context.ConnectionId,
-                    Transformation = new TransformationDataModel()
-                };
-                _context.FarmVisitors.Add(visitor);
-                _logger.LogInformation("Visitor added: {@Visitor}", visitor);
-            }
-            else
-            {
-                visitor.ConnectionId = Context.ConnectionId;
-                _logger.LogInformation("Visitor updated ConnectionId: {@Visitor}", visitor);
-            }
+                FarmId = farmId,
+                PlayerId = playerId,
+                ConnectionId = Context.ConnectionId,
+                Transformation = new TransformationDataModel()
+            };
 
+            _context.FarmVisitors.Add(visitor);
             await _context.SaveChangesAsync();
 
             var existingVisitors = await _context.FarmVisitors
@@ -81,7 +94,6 @@ namespace ProjectDawnApi
                 .ToListAsync();
 
             await Clients.Caller.SendAsync("InitialPlayers", existingVisitors);
-
             await Clients.OthersInGroup(farmIdStr).SendAsync("PlayerJoined", playerId);
         }
 
