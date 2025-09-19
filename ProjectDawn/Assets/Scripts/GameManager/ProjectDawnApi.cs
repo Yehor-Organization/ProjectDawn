@@ -44,6 +44,31 @@ public class ProjectDawnApi : MonoBehaviour
             Debug.LogError("[DEBUG] GameManager component not found on GameObject!");
     }
 
+    public async Task SendObjectPlacement(string typeKey, TransformationDC transformData)
+{
+    if (connection == null || connection.State != HubConnectionState.Connected)
+        return;
+
+    try
+    {
+        // let the server generate the ObjectId (Guid)
+        await connection.InvokeAsync(
+            "PlaceObject",
+            currentFarmId,
+            currentPlayerId,
+            typeKey,
+            transformData
+        );
+
+        Debug.Log($"[DEBUG] Sent object placement → type={typeKey}, transform={JsonUtility.ToJson(transformData)}");
+    }
+    catch (Exception ex)
+    {
+        Debug.LogError($"[DEBUG] Error sending object placement: {ex.Message}");
+    }
+}
+
+
     private async Task<T> GetFromApi<T>(string endpoint)
     {
         string url = $"{serverBaseUrl}/{endpoint}";
@@ -190,6 +215,16 @@ public class ProjectDawnApi : MonoBehaviour
                 }
             });
         });
+
+        connection.On<string, string, TransformationDC>("ObjectPlaced", (objectId, typeKey, transformData) =>
+        {
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                Debug.Log($"[SignalR] ObjectPlaced → id={objectId}, type={typeKey}");
+                ObjectManager.Instance.PlaceObject(Guid.Parse(objectId), typeKey, transformData);
+            });
+        });
+
 
         connection.On<int>("PlayerLeft", leftPlayerId =>
         {

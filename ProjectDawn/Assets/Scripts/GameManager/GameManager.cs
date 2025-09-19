@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using System.Threading.Tasks;
+using System;
 [RequireComponent(typeof(ObjectManager))]
 [RequireComponent(typeof(ProjectDawnApi))]
 [RequireComponent(typeof(PlayerManager))]
@@ -166,9 +167,17 @@ public class GameManager : MonoBehaviour
 
         foreach (var placedObject in farmData.placedObjects)
         {
-            objectManager.PlaceObject(placedObject.id, placedObject.type, placedObject.transformation);
+            if (Guid.TryParse(placedObject.objectId, out Guid guid))
+            {
+                objectManager.PlaceObject(guid, placedObject.type, placedObject.transformation);
+            }
+            else
+            {
+                Debug.LogWarning($"[GameManager] Invalid objectId: {placedObject.objectId}");
+            }
         }
     }
+
 
 }
 

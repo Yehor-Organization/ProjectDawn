@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ObjectManager : MonoBehaviour
@@ -9,7 +10,8 @@ public class ObjectManager : MonoBehaviour
     public List<ObjectPrefabMappingDataModel> objectPrefabs = new List<ObjectPrefabMappingDataModel>();
 
     private readonly Dictionary<string, GameObject> prefabDictionary = new();
-    private readonly Dictionary<int, GameObject> placedObjects = new();
+    private readonly Dictionary<Guid, GameObject> placedObjects = new();
+
 
     void Awake()
     {
@@ -23,7 +25,7 @@ public class ObjectManager : MonoBehaviour
         }
     }
 
-    public void PlaceObject(int objectId, string typeKey, TransformationDC transformData)
+    public void PlaceObject(Guid objectId, string typeKey, TransformationDC transformData)
     {
         if (placedObjects.ContainsKey(objectId))
             return;
@@ -40,6 +42,19 @@ public class ObjectManager : MonoBehaviour
         var obj = Instantiate(prefab, pos, rot);
         placedObjects[objectId] = obj;
     }
+
+
+    public GameObject GetPrefab(string typeKey)
+    {
+        if (prefabDictionary.TryGetValue(typeKey, out var prefab))
+        {
+            return prefab;
+        }
+
+        Debug.LogWarning($"[ObjectManager] No prefab found for object type: {typeKey}");
+        return null;
+    }
+
 
     public void ClearAll()
     {

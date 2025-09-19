@@ -71,26 +71,40 @@ public class LocalPlayerController : MonoBehaviour
 
     async void FixedUpdate()
     {
-        Vector3 inputDir = Vector3.zero;
+        // --- Build camera-relative movement axes ---
+        Camera cam = CameraManager.Instance != null ? CameraManager.Instance.GetCamera() : Camera.main;
+        Vector3 camForward = cam != null ? cam.transform.forward : Vector3.forward;
+        Vector3 camRight = cam != null ? cam.transform.right : Vector3.right;
 
+        // Flatten to XZ plane
+        camForward.y = 0f;
+        camRight.y = 0f;
+        camForward.Normalize();
+        camRight.Normalize();
+
+        // --- Keyboard input ---
+        Vector3 inputDir = Vector3.zero;
         var keyboard = Keyboard.current;
         if (keyboard != null)
         {
-            if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) inputDir += Vector3.forward;
-            if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) inputDir += Vector3.back;
-            if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) inputDir += Vector3.left;
-            if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) inputDir += Vector3.right;
+            if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) inputDir += camForward;
+            if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) inputDir -= camForward;
+            if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) inputDir -= camRight;
+            if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) inputDir += camRight;
         }
 
         if (inputDir.sqrMagnitude > 1f)
             inputDir.Normalize();
 
+        // --- Joystick input ---
         Vector3 joystickDir = Vector3.zero;
         if (joystick != null)
-            joystickDir = new Vector3(joystick.Horizontal, 0, joystick.Vertical);
+            joystickDir = (camForward * joystick.Vertical) + (camRight * joystick.Horizontal);
 
+        // --- Final move direction (joystick has priority) ---
         Vector3 moveDir = joystickDir.magnitude > 0.1f ? joystickDir : inputDir;
 
+        // --- Apply movement & rotation ---
         if (moveDir.magnitude > 0.1f)
         {
             ApplyRotationMomentum(moveDir);
@@ -101,6 +115,7 @@ public class LocalPlayerController : MonoBehaviour
             ApplyMovementMomentum(Vector3.zero);
         }
 
+        // --- Networking update ---
         bool moved = Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold;
         bool rotated = Vector3.Distance(transform.rotation.eulerAngles, lastRotation) > rotationUpdateThreshold;
 
@@ -140,7 +155,7 @@ public class LocalPlayerController : MonoBehaviour
             rb.rotation.eulerAngles.y,
             targetAngle,
             ref rotationVelocity,
-            rotationInertia // Inspector-controlled
+            rotationInertia
         );
 
         rb.MoveRotation(Quaternion.Euler(0, angle, 0));
@@ -154,7 +169,7 @@ public class LocalPlayerController : MonoBehaviour
         currentVelocity = Vector3.Lerp(
             rb.linearVelocity,
             targetVelocity,
-            movementInertia // Inspector-controlled
+            movementInertia
         );
 
         rb.linearVelocity = currentVelocity;

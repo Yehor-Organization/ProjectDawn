@@ -1,0 +1,11 @@
+{
+    "asset": "1d2daff826af5fe1b985ab4ee9fc2604",
+    "fileName": "019962d0-bf66-7680-a098-bd3ad0924954_Preview.png",
+    "prompt": "rock low poly",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 1023354307,
+    "w3CTraceId": "c775ff9c6d86a70327c2190680e745b8",
+    "refinementMode": "Generation"
+}

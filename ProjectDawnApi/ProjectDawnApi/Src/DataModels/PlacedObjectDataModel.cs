@@ -10,16 +10,18 @@ namespace ProjectDawnApi
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public int Id { get; set; } // DB primary key
 
-        // Foreign key to the FarmDataModel this object belongs to
         public int FarmId { get; set; }
 
         [Required]
         [StringLength(50)]
-        public string Type { get; set; } = string.Empty; // e.g., "Barn", "Fence", "Tree"
+        public string Type { get; set; } = string.Empty;
 
-        // Storing 3D vector data as separate float properties
+        // Unique per farm → safe to send over SignalR
+        public Guid ObjectId { get; set; } = Guid.NewGuid();
+
         public TransformationDataModel Transformation { get; set; } = new TransformationDataModel();
     }
+
 }

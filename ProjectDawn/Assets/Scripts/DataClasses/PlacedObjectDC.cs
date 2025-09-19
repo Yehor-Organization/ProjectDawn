@@ -1,9 +1,8 @@
-using System.Collections.Generic;
 
 [System.Serializable]
 public class PlacedObjectDC
 {
-    public int id;
+    public string objectId; // Guid from server (as string in JSON)
     public string type;
     public TransformationDC transformation;
 }

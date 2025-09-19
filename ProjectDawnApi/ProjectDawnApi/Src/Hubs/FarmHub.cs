@@ -99,6 +99,37 @@ namespace ProjectDawnApi
         }
 
         /// <summary>
+        /// Broadcasts an object placement to all other clients in the farm.
+        /// </summary>
+        public async Task PlaceObject(string farmIdStr, int playerId, string typeKey, TransformationDataModel transformData)
+        {
+            if (!int.TryParse(farmIdStr, out int farmId))
+                return;
+
+            var newObjectId = Guid.NewGuid();
+
+            _logger.LogInformation($"Player {playerId} placed object {newObjectId} of type {typeKey} in farm {farmId}");
+
+            // Broadcast to everyone else
+            await Clients.OthersInGroup(farmIdStr)
+                .SendAsync("ObjectPlaced", newObjectId, typeKey, transformData);
+
+            // Save to DB
+            var placement = new PlacedObjectDataModel
+            {
+                FarmId = farmId,
+                ObjectId = newObjectId,
+                Type = typeKey,
+                Transformation = transformData
+            };
+
+            _context.PlacedObjects.Add(placement);
+            await _context.SaveChangesAsync();
+        }
+
+
+
+        /// <summary>
         /// Explicit leave call from client (graceful exit).
         /// </summary>
         public async Task LeaveFarm(string farmIdStr, int playerId)
