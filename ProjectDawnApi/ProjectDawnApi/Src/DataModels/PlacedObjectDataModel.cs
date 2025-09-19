@@ -10,8 +10,7 @@ namespace ProjectDawnApi
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; } // DB primary key
-
+        public Guid Id { get; set; } = Guid.NewGuid(); 
         public int FarmId { get; set; }
 
         [Required]
