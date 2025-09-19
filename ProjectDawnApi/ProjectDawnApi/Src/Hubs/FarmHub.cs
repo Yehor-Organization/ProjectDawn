@@ -158,24 +158,28 @@ namespace ProjectDawnApi
         /// </summary>
         public async Task UpdatePlayerTransformation(string farmIdStr, int playerId, TransformationDataModel transformation)
         {
+            // Always send live updates to other clients
             await Clients.OthersInGroup(farmIdStr)
                 .SendAsync("PlayerTransformationUpdated", playerId, transformation);
 
-            if (!int.TryParse(farmIdStr, out int farmId)) return;
+            if (!int.TryParse(farmIdStr, out int farmId))
+                return;
 
-            // Always update in-memory queue
+            // Always update in-memory cache/queue
             TransformationQueue.Queue[(farmId, playerId)] = transformation;
 
-            // Throttle database writes
+            // Check if it's too soon to save to DB
             var now = DateTime.UtcNow;
             if (LastTransformationSave.TryGetValue(playerId, out var lastSave) &&
                 now - lastSave < TransformationSaveInterval)
             {
-                return; // too soon, skip save
+                return; // skip DB
             }
 
+            // Update last save timestamp
             LastTransformationSave[playerId] = now;
 
+            // Only hit DB when we actually need to write
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ProjectDawnDbContext>();
 
@@ -188,6 +192,7 @@ namespace ProjectDawnApi
                 await db.SaveChangesAsync();
             }
         }
+
 
 
         /// <summary>
