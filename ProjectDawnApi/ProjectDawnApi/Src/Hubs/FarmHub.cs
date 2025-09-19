@@ -163,6 +163,19 @@ namespace ProjectDawnApi
 
             if (!int.TryParse(farmIdStr, out int farmId)) return;
 
+            // Always update in-memory queue
+            TransformationQueue.Queue[(farmId, playerId)] = transformation;
+
+            // Throttle database writes
+            var now = DateTime.UtcNow;
+            if (LastTransformationSave.TryGetValue(playerId, out var lastSave) &&
+                now - lastSave < TransformationSaveInterval)
+            {
+                return; // too soon, skip save
+            }
+
+            LastTransformationSave[playerId] = now;
+
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ProjectDawnDbContext>();
 
