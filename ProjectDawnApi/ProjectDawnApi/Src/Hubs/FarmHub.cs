@@ -161,12 +161,21 @@ namespace ProjectDawnApi
             await Clients.OthersInGroup(farmIdStr)
                 .SendAsync("PlayerTransformationUpdated", playerId, transformation);
 
-            if (int.TryParse(farmIdStr, out int farmId))
+            if (!int.TryParse(farmIdStr, out int farmId)) return;
+
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ProjectDawnDbContext>();
+
+            var visitor = await db.FarmVisitors
+                .FirstOrDefaultAsync(v => v.FarmId == farmId && v.PlayerId == playerId);
+
+            if (visitor != null)
             {
-                // Store in dictionary (overwrite old value)
-                TransformationQueue.Queue[(farmId, playerId)] = transformation;
+                visitor.Transformation = transformation;
+                await db.SaveChangesAsync();
             }
         }
+
 
         /// <summary>
         /// Always runs when the connection is lost (app crash, kill, or network drop).
