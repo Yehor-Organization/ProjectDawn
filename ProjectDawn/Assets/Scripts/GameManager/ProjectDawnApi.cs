@@ -284,21 +284,29 @@ public class ProjectDawnApi : MonoBehaviour
             return false;
         }
     }
-
     public async Task SendTransformationUpdate(TransformationDC transformation)
     {
         if (connection == null || connection.State != HubConnectionState.Connected)
+        {
+            Debug.LogWarning("[ProjectDawnApi] Skipping transformation update → not connected");
             return;
+        }
 
         try
         {
-            await connection.InvokeAsync("UpdatePlayerTransformation", currentFarmId, currentPlayerId, transformation);
+            await connection.SendAsync(
+                "UpdatePlayerTransformation",
+                currentFarmId,
+                currentPlayerId,
+                transformation
+            );
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[DEBUG] Error sending transformation update: {ex.Message}");
+            Debug.LogWarning($"[ProjectDawnApi] Failed to send transformation update: {ex.Message}");
         }
     }
+
 
     public async Task DisconnectAsync()
     {

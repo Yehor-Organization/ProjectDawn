@@ -67,6 +67,7 @@ public class PlacementController : MonoBehaviour
                 GameObject prefab = ObjectManager.Instance.GetPrefab(objectTypeToPlace);
                 if (prefab != null)
                 {
+                    // 👇 parent preview to this controller
                     previewInstance = Instantiate(prefab);
                     MakeTransparent(previewInstance, 0.5f);
                     DisablePhysics(previewInstance);
@@ -100,7 +101,7 @@ public class PlacementController : MonoBehaviour
     }
 
     // ---------------- FINAL PLACEMENT ----------------
-  private async void TryPlaceAtPreview()
+    private async void TryPlaceAtPreview()
     {
         if (previewInstance != null && previewValid)
         {
@@ -122,7 +123,6 @@ public class PlacementController : MonoBehaviour
             Debug.LogWarning("[PlacementController] Tried to place, but preview was invalid!");
         }
     }
-
 
     // ---------------- HELPERS ----------------
     private bool IsPlacementBlocked(GameObject preview, Terrain terrain, float treeMinDistance = 2f)
@@ -237,5 +237,15 @@ public class PlacementController : MonoBehaviour
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, playerMaskRadius);
+    }
+
+    // ---------------- CLEANUP ----------------
+    private void OnDestroy()
+    {
+        if (previewInstance != null)
+        {
+            Destroy(previewInstance);
+            previewInstance = null;
+        }
     }
 }

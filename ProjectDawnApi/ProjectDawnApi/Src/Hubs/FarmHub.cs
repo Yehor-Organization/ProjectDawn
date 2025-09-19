@@ -110,8 +110,8 @@ namespace ProjectDawnApi
 
             _logger.LogInformation($"Player {playerId} placed object {newObjectId} of type {typeKey} in farm {farmId}");
 
-            // Broadcast to everyone else
-            await Clients.OthersInGroup(farmIdStr)
+            // Broadcast to everyone in the farm (including sender)
+            await Clients.Group(farmIdStr)
                 .SendAsync("ObjectPlaced", newObjectId, typeKey, transformData);
 
             // Save to DB
@@ -126,7 +126,6 @@ namespace ProjectDawnApi
             _context.PlacedObjects.Add(placement);
             await _context.SaveChangesAsync();
         }
-
 
 
         /// <summary>
