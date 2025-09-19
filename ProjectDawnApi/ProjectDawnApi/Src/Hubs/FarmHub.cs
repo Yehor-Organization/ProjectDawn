@@ -40,6 +40,7 @@ namespace ProjectDawnApi
             var player = await _context.Players
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == playerId);
+
             if (player == null)
             {
                 _logger.LogWarning($"Player {playerId} does not exist.");
@@ -48,32 +49,29 @@ namespace ProjectDawnApi
                 return;
             }
 
-            // Check if player already has an active session
+            // Check for an existing session for this player
             var existingVisitor = await _context.FarmVisitors
                 .FirstOrDefaultAsync(v => v.PlayerId == playerId);
 
             if (existingVisitor != null)
             {
-                // Kick out the old connection
-                _logger.LogInformation($"Kicking out old session for player {playerId} (ConnId {existingVisitor.ConnectionId})");
+                _logger.LogInformation($"Replacing old session for player {playerId} (old ConnId {existingVisitor.ConnectionId})");
 
-                // Notify old client
+                // Kick the old client
                 await Clients.Client(existingVisitor.ConnectionId)
                     .SendAsync("Kicked", "You have been logged out because you logged in elsewhere.");
 
-                // Remove old record
+                // Remove from group and DB
+                await Groups.RemoveFromGroupAsync(existingVisitor.ConnectionId, existingVisitor.FarmId.ToString());
                 _context.FarmVisitors.Remove(existingVisitor);
                 await _context.SaveChangesAsync();
 
-                // Remove from SignalR group
-                await Groups.RemoveFromGroupAsync(existingVisitor.ConnectionId, existingVisitor.FarmId.ToString());
-
-                // Let others in that farm know they left
+                // Notify others
                 await Clients.OthersInGroup(existingVisitor.FarmId.ToString())
                     .SendAsync("PlayerLeft", existingVisitor.PlayerId);
             }
 
-            // Proceed with new session
+            // Always continue with new session
             await Groups.AddToGroupAsync(Context.ConnectionId, farmIdStr);
 
             var visitor = new FarmVisitorDataModel
@@ -87,6 +85,7 @@ namespace ProjectDawnApi
             _context.FarmVisitors.Add(visitor);
             await _context.SaveChangesAsync();
 
+            // Send list of current players back to the new client
             var existingVisitors = await _context.FarmVisitors
                 .AsNoTracking()
                 .Where(v => v.FarmId == farmId && v.PlayerId != playerId)
@@ -95,6 +94,8 @@ namespace ProjectDawnApi
 
             await Clients.Caller.SendAsync("InitialPlayers", existingVisitors);
             await Clients.OthersInGroup(farmIdStr).SendAsync("PlayerJoined", playerId);
+
+            _logger.LogInformation($"Player {playerId} successfully joined farm {farmId} (ConnId {Context.ConnectionId}).");
         }
 
         /// <summary>
