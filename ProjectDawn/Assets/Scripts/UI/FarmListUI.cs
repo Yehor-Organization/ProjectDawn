@@ -39,7 +39,6 @@ public class FarmListUI : MonoBehaviour
 
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
-            webRequest.certificateHandler = new BypassCertificate();
             yield return webRequest.SendWebRequest();
 
             if (webRequest.result != UnityWebRequest.Result.Success)

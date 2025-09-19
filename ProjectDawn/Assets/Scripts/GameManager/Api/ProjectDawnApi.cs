@@ -66,7 +66,7 @@ public class ProjectDawnApi : MonoBehaviour
         }
     }
 
-    public async Task StopConnectionOnly()
+    public async Task CloseConnectionAsync()
     {
         if (connection != null)
         {
@@ -102,10 +102,10 @@ public class ProjectDawnApi : MonoBehaviour
         connection.On<string>("Kicked", (reason) =>
         {
             Debug.LogWarning($"[SignalR] You were kicked: {reason}");
-            MainThreadDispatcher.Enqueue(() =>
+            MainThreadDispatcher.Enqueue(async () =>
             {
                 gameManager.ForceLeaveFarmImmediate();
-                StopConnectionOnly();
+                await CloseConnectionAsync();
             });
         });
 
@@ -116,11 +116,7 @@ public class ProjectDawnApi : MonoBehaviour
 
             MainThreadDispatcher.Enqueue(() =>
             {
-                if (gameManager != null)
-                {
-                    Debug.LogWarning("[DEBUG] Force leave farm (Closed)");
-                    gameManager.ForceLeaveFarmImmediate();
-                }
+                gameManager.ForceLeaveFarmImmediate();    
             });
 
             return Task.CompletedTask;
@@ -148,7 +144,7 @@ public class ProjectDawnApi : MonoBehaviour
             });
         });
 
-        connection.On<int, TransformationDataModel>("PlayerTransformationUpdated", (updatedPlayerId, newTransformation) =>
+        connection.On<int, TransformationDto>("PlayerTransformationUpdated", (updatedPlayerId, newTransformation) =>
         {
             MainThreadDispatcher.Enqueue(() =>
             {
@@ -198,7 +194,7 @@ public class ProjectDawnApi : MonoBehaviour
         }
     }
 
-    public async Task SendTransformationUpdate(TransformationDataModel transformation)
+    public async Task SendTransformationUpdate(TransformationDto transformation)
     {
         if (connection == null || connection.State != HubConnectionState.Connected)
             return;
@@ -213,7 +209,7 @@ public class ProjectDawnApi : MonoBehaviour
         }
     }
 
-    public async void Disconnect()
+    public async Task DisconnectAsync()
     {
         if (connection != null && connection.State == HubConnectionState.Connected)
         {
@@ -239,24 +235,24 @@ public class ProjectDawnApi : MonoBehaviour
             playerManager.ClearAllPlayers();
     }
 
-    private void OnApplicationQuit()
+    private async void OnApplicationQuit()
     {
         Debug.Log("[DEBUG] Application quitting. Disconnecting...");
-        Disconnect();
+        await DisconnectAsync();
     }
 
-    private void OnApplicationPause(bool pauseStatus)
+    private async void OnApplicationPause(bool pauseStatus)
     {
         if (pauseStatus)
         {
             Debug.Log("[DEBUG] Application paused. Disconnecting...");
-            Disconnect();
+            await DisconnectAsync();
         }
     }
 
-    private void OnDestroy()
+    private async void OnDestroy()
     {
         Debug.Log("[DEBUG] OnDestroy called. Disconnecting...");
-        Disconnect();
+        await DisconnectAsync();
     }
 }

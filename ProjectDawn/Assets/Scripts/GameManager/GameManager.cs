@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour
     public TMP_InputField playerIdInput;  // assign in Inspector
 
     [Header("Object Prefabs")]
-    public List<ObjectPrefabMapping> objectPrefabs = new List<ObjectPrefabMapping>();
+    public List<ObjectPrefabMappingDataModel> objectPrefabs = new List<ObjectPrefabMappingDataModel>();
     private Dictionary<string, GameObject> prefabDictionary = new Dictionary<string, GameObject>();
 
     [Header("Component References")]
@@ -63,7 +63,6 @@ public class GameManager : MonoBehaviour
             ToggleMenu();
         }
     }
-
     private void OnPlayerIdChanged(string newValue)
     {
         if (int.TryParse(newValue, out int parsedId))
@@ -76,7 +75,6 @@ public class GameManager : MonoBehaviour
             Debug.LogWarning("[GameManager] Invalid Player ID input (not an integer).");
         }
     }
-
     private void ToggleMenu()
     {
         if (Menu == null) return;
@@ -87,13 +85,12 @@ public class GameManager : MonoBehaviour
         if (Joystick != null)
             Joystick.SetActive(isActive);
     }
-
     public async Task<bool> JoinFarm(string newFarmId)
     {
         if (!string.IsNullOrEmpty(farmId))
         {
             Debug.Log($"[GameManager] Already connected to farm {farmId}. Leaving before joining {newFarmId}...");
-            ResetToMenu();
+            await ResetToMenu();
         }
 
         Debug.Log($"[GameManager] Joining farm: {newFarmId}");
@@ -102,7 +99,6 @@ public class GameManager : MonoBehaviour
         string url = $"{serverBaseUrl}/api/Farms/{farmId}";
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
-            webRequest.certificateHandler = new BypassCertificate();
             await webRequest.SendWebRequest();
 
             if (webRequest.result == UnityWebRequest.Result.Success)
@@ -122,33 +118,31 @@ public class GameManager : MonoBehaviour
                     else
                     {
                         Debug.LogError("[GameManager] Failed to join farm (server rejected or connection issue).");
-                        ResetToMenu(); // instead of farmId=null + ClearFarm()
+                        await ResetToMenu(); // instead of farmId=null + ClearFarm()
                         return false;
                     }
                 }
                 else
                 {
                     Debug.LogError("RealTimeClient (ProjectDawnApi) is not assigned!");
-                    ResetToMenu();
+                    await ResetToMenu();
                     return false;
                 }
             }
             else
             {
                 Debug.LogError($"Failed to fetch farm state: {webRequest.error}");
-                ResetToMenu();
+                await ResetToMenu();
                 return false;
             }
         }
     }
-
-
-    public void ResetToMenu()
+    public async Task ResetToMenu()
     {
         Debug.Log("[GameManager] Resetting game state to menu...");
 
         // Clear farm objects + disconnect networking
-        LeaveFarm();
+        await LeaveFarm();
 
         // Show farm selection again
         var farmUI = FindObjectOfType<FarmListUI>();
@@ -162,39 +156,7 @@ public class GameManager : MonoBehaviour
         // Reset farmId just to be safe
         farmId = null;
     }
-
-
-
-    private IEnumerator LoadFarmStateAndConnect()
-    {
-        string url = $"{serverBaseUrl}/api/Farms/{farmId}";
-        Debug.Log($"Requesting farm state from: {url}");
-
-        using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
-        {
-            webRequest.certificateHandler = new BypassCertificate();
-            yield return webRequest.SendWebRequest();
-
-            if (webRequest.result == UnityWebRequest.Result.Success)
-            {
-                Debug.Log("Successfully fetched farm state.");
-                string jsonResponse = webRequest.downloadHandler.text;
-                FarmStateDto farmData = JsonConvert.DeserializeObject<FarmStateDto>(jsonResponse);
-
-                BuildFarm(farmData);
-
-                if (realTimeClient != null)
-                    realTimeClient.ConnectAndJoin(serverBaseUrl, farmId, playerId);
-                else
-                    Debug.LogError("RealTimeClient (ProjectDawnApi) is not assigned!");
-            }
-            else
-            {
-                Debug.LogError($"Failed to fetch farm state: {webRequest.error}");
-            }
-        }
-    }
-    public async void LeaveFarm()
+    public async Task LeaveFarm()
     {
         Debug.Log("[GameManager] Leaving current farm...");
 
@@ -203,7 +165,7 @@ public class GameManager : MonoBehaviour
 
         // ✅ Disconnect networking
         if (realTimeClient != null)
-            realTimeClient.Disconnect();
+            await realTimeClient.DisconnectAsync();
 
         // ✅ Reset state
         farmId = null;
@@ -232,10 +194,6 @@ public class GameManager : MonoBehaviour
         // ❌ DO NOT call StopAsync here!
         // Let ProjectDawnApi.StopConnectionOnly() run separately if needed
     }
-
-
-
-
     private void ClearFarm()
     {
         foreach (Transform child in transform)
@@ -271,14 +229,3 @@ public class GameManager : MonoBehaviour
     }
 }
 
-[System.Serializable]
-public class ObjectPrefabMapping
-{
-    public string typeKey;
-    public GameObject prefab;
-}
-
-public class BypassCertificate : CertificateHandler
-{
-    protected override bool ValidateCertificate(byte[] certificateData) => true;
-}

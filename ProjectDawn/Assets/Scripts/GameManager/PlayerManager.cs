@@ -137,7 +137,7 @@ public class PlayerManager : MonoBehaviour
     /// <summary>
     /// Updates a remote player’s position/rotation from the network.
     /// </summary>
-    public void UpdatePlayerTransformation(int playerId, TransformationDataModel newTransformation)
+    public void UpdatePlayerTransformation(int playerId, TransformationDto newTransformation)
     {
         if (remotePlayers.TryGetValue(playerId, out GameObject playerObj))
         {

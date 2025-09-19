@@ -5,5 +5,5 @@ public class PlacedObjectDto
 {
     public int id;
     public string type;
-    public TransformationDataModel transformation;
+    public TransformationDto transformation;
 }
