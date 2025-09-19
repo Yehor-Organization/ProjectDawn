@@ -137,8 +137,18 @@ public async Task<bool> ConnectAndJoin(string farmId, int playerId)
             return false;
         }
 
-        // ✅ Fetch farm state from API
-        var farmState = await GetFarmState(farmId);
+
+        // Before spawning anything new
+        MainThreadDispatcher.Enqueue(() =>
+        {
+            ObjectManager.Instance.ClearAll();
+            playerManager.ClearAllPlayers();
+        });
+
+
+
+            // ✅ Fetch farm state from API
+            var farmState = await GetFarmState(farmId);
         if (farmState != null)
         {
             MainThreadDispatcher.Enqueue(() =>
@@ -368,6 +378,8 @@ public async Task<bool> ConnectAndJoin(string farmId, int playerId)
 
         if (playerManager != null)
             playerManager.ClearAllPlayers();
+        if (ObjectManager.Instance != null)
+            ObjectManager.Instance.ClearAll();
     }
 
     private async void OnApplicationQuit()

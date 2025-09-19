@@ -90,8 +90,11 @@ public class GameManager : MonoBehaviour
     }
     public async Task<bool> JoinFarm(string farmId)
     {
+        // ✅ First leave current farm cleanly before joining another
+        await LeaveFarm();
 
-        FarmStateDC farmData = await projectDawnApi.GetFarmState(farmId);
+        // Optional: add a tiny delay to let SignalR fully close sockets
+        await Task.Delay(300); // 0.3s buffer, tweak if needed
 
         if (projectDawnApi != null)
         {
@@ -104,7 +107,7 @@ public class GameManager : MonoBehaviour
             else
             {
                 Debug.LogError("[GameManager] Failed to join farm (server rejected or connection issue).");
-                await ResetToMenu(); // instead of farmId=null + ClearFarm()
+                await ResetToMenu();
                 return false;
             }
         }
@@ -114,9 +117,8 @@ public class GameManager : MonoBehaviour
             await ResetToMenu();
             return false;
         }
-       
-        
     }
+
     public async Task ResetToMenu()
     {
         Debug.Log("[GameManager] Resetting game state to menu...");
@@ -135,11 +137,12 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("[GameManager] Leaving current farm...");
 
-        ClearFarm();
-
         if (projectDawnApi != null)
             await projectDawnApi.DisconnectAsync();
+
+        ClearFarm(); // ✅ now clear after disconnect
     }
+
 
     public void ForceLeaveFarmImmediate()
     {
@@ -155,8 +158,9 @@ public class GameManager : MonoBehaviour
     }
     private void ClearFarm()
     {
-        foreach (Transform child in transform)
-            Destroy(child.gameObject);
+        Debug.Log("[GameManager] Clearing farm state...");
+        ObjectManager.Instance.ClearAll();
+        playerManager.ClearAllPlayers();
     }
 
 
