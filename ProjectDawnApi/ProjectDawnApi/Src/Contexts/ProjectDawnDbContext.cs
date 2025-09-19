@@ -1,5 +1,4 @@
-﻿ using Microsoft.EntityFrameworkCore;
-using System.Numerics;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace ProjectDawnApi
 {
@@ -19,36 +18,50 @@ namespace ProjectDawnApi
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Configure the relationships between the models
+            base.OnModelCreating(modelBuilder);
 
-            // A FarmDataModel has one Owner (PlayerDataModel)
+            // -----------------------------
+            // Farm → Owner (many-to-one)
+            // -----------------------------
             modelBuilder.Entity<FarmDataModel>()
                 .HasOne(f => f.Owner)
-                .WithMany()
+                .WithMany() // if you later add ICollection<FarmDataModel> OwnedFarms to Player, replace this
                 .HasForeignKey(f => f.OwnerId)
                 .IsRequired();
 
-            // A FarmDataModel has many PlacedObjects
+            // -----------------------------
+            // Farm → PlacedObjects (one-to-many)
+            // -----------------------------
             modelBuilder.Entity<FarmDataModel>()
                 .HasMany(f => f.PlacedObjects)
                 .WithOne()
                 .HasForeignKey(p => p.FarmId)
                 .IsRequired();
 
-            // Configure the many-to-many relationship between FarmDataModel and PlayerDataModel (for visitors)
-            // using the FarmVisitorDataModel join table.
+            // -----------------------------
+            // Farm ↔ Player (many-to-many) via FarmVisitorDataModel
+            // -----------------------------
             modelBuilder.Entity<FarmVisitorDataModel>()
-                .HasKey(fv => new { fv.FarmId, fv.PlayerId }); // Composite key
+                .HasKey(fv => new { fv.FarmId, fv.PlayerId });
 
             modelBuilder.Entity<FarmVisitorDataModel>()
-                .HasOne<FarmDataModel>()
-                .WithMany(f => f.Visitors)
+                .HasOne(fv => fv.Farm)
+                .WithMany(f => f.Visitors) // ✅ wires FarmDataModel.Visitors:contentReference[oaicite:0]{index=0}
                 .HasForeignKey(fv => fv.FarmId);
 
             modelBuilder.Entity<FarmVisitorDataModel>()
                 .HasOne(fv => fv.PlayerDataModel)
-                .WithMany()
+                .WithMany() // if you want reverse navigation, add ICollection<FarmVisitorDataModel> Visits to Player:contentReference[oaicite:1]{index=1}:contentReference[oaicite:2]{index=2}
                 .HasForeignKey(fv => fv.PlayerId);
+
+            // -----------------------------
+            // Owned type: TransformationDataModel
+            // -----------------------------
+            modelBuilder.Entity<PlacedObjectDataModel>()
+                .OwnsOne(p => p.Transformation); // :contentReference[oaicite:3]{index=3}:contentReference[oaicite:4]{index=4}
+
+            modelBuilder.Entity<FarmVisitorDataModel>()
+                .OwnsOne(v => v.Transformation); // :contentReference[oaicite:5]{index=5}:contentReference[oaicite:6]{index=6}
         }
     }
 }
