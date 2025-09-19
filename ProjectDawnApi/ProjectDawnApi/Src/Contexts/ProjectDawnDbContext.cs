@@ -25,7 +25,7 @@ namespace ProjectDawnApi
             // -----------------------------
             modelBuilder.Entity<FarmDataModel>()
                 .HasOne(f => f.Owner)
-                .WithMany() // if you later add ICollection<FarmDataModel> OwnedFarms to Player, replace this
+                .WithMany()
                 .HasForeignKey(f => f.OwnerId)
                 .IsRequired();
 
@@ -46,22 +46,22 @@ namespace ProjectDawnApi
 
             modelBuilder.Entity<FarmVisitorDataModel>()
                 .HasOne(fv => fv.Farm)
-                .WithMany(f => f.Visitors) // ✅ wires FarmDataModel.Visitors:contentReference[oaicite:0]{index=0}
+                .WithMany(f => f.Visitors)
                 .HasForeignKey(fv => fv.FarmId);
 
             modelBuilder.Entity<FarmVisitorDataModel>()
                 .HasOne(fv => fv.PlayerDataModel)
-                .WithMany() // if you want reverse navigation, add ICollection<FarmVisitorDataModel> Visits to Player:contentReference[oaicite:1]{index=1}:contentReference[oaicite:2]{index=2}
+                .WithMany()
                 .HasForeignKey(fv => fv.PlayerId);
 
             // -----------------------------
-            // Owned type: TransformationDataModel
+            // Owned types
             // -----------------------------
             modelBuilder.Entity<PlacedObjectDataModel>()
-                .OwnsOne(p => p.Transformation); // :contentReference[oaicite:3]{index=3}:contentReference[oaicite:4]{index=4}
+                .OwnsOne(p => p.Transformation);
 
             modelBuilder.Entity<FarmVisitorDataModel>()
-                .OwnsOne(v => v.Transformation); // :contentReference[oaicite:5]{index=5}:contentReference[oaicite:6]{index=6}
+                .OwnsOne(v => v.Transformation);
         }
     }
 }

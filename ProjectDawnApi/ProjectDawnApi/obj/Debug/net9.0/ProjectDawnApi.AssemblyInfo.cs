@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ProjectDawnApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2a8cc164734ae8888794f1872ed5f4033c975222")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9f6f46c07e517e20d9114393e7b6a15ef96aa6a9")]
 [assembly: System.Reflection.AssemblyProductAttribute("ProjectDawnApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ProjectDawnApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

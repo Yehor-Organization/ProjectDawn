@@ -103,50 +103,86 @@ public class ProjectDawnApi : MonoBehaviour
 
 
 
-    public async Task<bool> ConnectAndJoin(string farmId, int playerId)
+public async Task<bool> ConnectAndJoin(string farmId, int playerId)
+{
+    this.currentFarmId = farmId;
+    this.currentPlayerId = playerId;
+
+    if (playerManager == null)
     {
-        this.currentFarmId = farmId;
-        this.currentPlayerId = playerId;
-
-        if (playerManager == null)
-        {
-            Debug.LogError("[DEBUG] PlayerManager is not assigned!");
-            return false;
-        }
-
-        try
-        {
-            connection = new HubConnectionBuilder()
-                .WithUrl($"{serverBaseUrl}/farmHub", options =>
-                {
-                    options.Transports = HttpTransportType.WebSockets;
-                })
-                .WithAutomaticReconnect()
-                .Build();
-
-            RegisterEventHandlers();
-
-            Debug.Log("[DEBUG] Starting SignalR connection...");
-            await connection.StartAsync();
-            Debug.Log("[DEBUG] Connection started successfully.");
-
-            bool joined = await JoinFarmGroup();
-            if (!joined)
-            {
-                Debug.LogWarning("[DEBUG] Failed to join farm.");
-                return false;
-            }
-
-            playerManager.SpawnPlayer(playerId, true);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"[DEBUG] Error starting connection: {ex}");
-            return false;
-        }
+        Debug.LogError("[DEBUG] PlayerManager is not assigned!");
+        return false;
     }
 
+    try
+    {
+        connection = new HubConnectionBuilder()
+            .WithUrl($"{serverBaseUrl}/farmHub", options =>
+            {
+                options.Transports = HttpTransportType.WebSockets;
+            })
+            .WithAutomaticReconnect()
+            .Build();
+
+        RegisterEventHandlers();
+
+        Debug.Log("[DEBUG] Starting SignalR connection...");
+        await connection.StartAsync();
+        Debug.Log("[DEBUG] Connection started successfully.");
+
+        bool joined = await JoinFarmGroup();
+        if (!joined)
+        {
+            Debug.LogWarning("[DEBUG] Failed to join farm.");
+            return false;
+        }
+
+        // ✅ Fetch farm state from API
+        var farmState = await GetFarmState(farmId);
+        if (farmState != null)
+        {
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                Debug.Log($"[DEBUG] Building farm → objects={farmState.placedObjects?.Count ?? 0}, visitors={farmState.visitors?.Count ?? 0}");
+
+                // Place existing objects
+                if (farmState.placedObjects != null)
+                {
+                    foreach (var obj in farmState.placedObjects)
+                    {
+                        Guid gid = Guid.Parse(obj.id);
+                        ObjectManager.Instance.PlaceObject(gid, obj.type, obj.transformation);
+
+                    }
+                }
+
+                // Spawn other players already in the farm
+                if (farmState.visitors != null)
+                {
+                    foreach (var visitor in farmState.visitors)
+                    {
+                        if (visitor.playerId != currentPlayerId)
+                            playerManager.SpawnPlayer(visitor.playerId, false);
+                    }
+                }
+            });
+        }
+        else
+        {
+            Debug.LogWarning("[DEBUG] Farm state is null → could not build farm from server data.");
+        }
+
+        // Spawn myself last
+        playerManager.SpawnPlayer(playerId, true);
+
+        return true;
+    }
+    catch (Exception ex)
+    {
+        Debug.LogError($"[DEBUG] Error starting connection: {ex}");
+        return false;
+    }
+}
     public async Task CloseConnectionAsync()
     {
         if (connection != null)

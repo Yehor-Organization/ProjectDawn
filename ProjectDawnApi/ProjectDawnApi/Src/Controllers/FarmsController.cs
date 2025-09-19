@@ -57,9 +57,9 @@ namespace ProjectDawnApi
                     f.Id,
                     f.Name,
                     OwnerName = f.Owner != null ? f.Owner.Name : "N/A",
-                    PlacedObjects = f.PlacedObjects.Select(po => new
+                   PlacedObjects = f.PlacedObjects.Select(po => new
                     {
-                        po.Id,
+                        id = po.Id,   // 👈 now a Guid
                         po.Type,
                         Transformation = new
                         {

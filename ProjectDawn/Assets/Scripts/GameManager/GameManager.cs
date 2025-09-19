@@ -92,7 +92,6 @@ public class GameManager : MonoBehaviour
     {
 
         FarmStateDC farmData = await projectDawnApi.GetFarmState(farmId);
-        BuildFarm(farmData);
 
         if (projectDawnApi != null)
         {
@@ -160,23 +159,6 @@ public class GameManager : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    private void BuildFarm(FarmStateDC farmData)
-    {
-        if (objectManager != null)
-            objectManager.ClearAll();
-
-        foreach (var placedObject in farmData.placedObjects)
-        {
-            if (Guid.TryParse(placedObject.objectId, out Guid guid))
-            {
-                objectManager.PlaceObject(guid, placedObject.type, placedObject.transformation);
-            }
-            else
-            {
-                Debug.LogWarning($"[GameManager] Invalid objectId: {placedObject.objectId}");
-            }
-        }
-    }
 
 
 }

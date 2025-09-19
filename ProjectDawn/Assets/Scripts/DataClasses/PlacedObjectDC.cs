@@ -1,8 +1,7 @@
-
 [System.Serializable]
 public class PlacedObjectDC
 {
-    public string objectId; // Guid from server (as string in JSON)
+    public string id;   // Guid string from JSON
     public string type;
     public TransformationDC transformation;
 }
