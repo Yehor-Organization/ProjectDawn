@@ -26,7 +26,7 @@ public class RemotePlayerController : MonoBehaviour
     /// <summary>
     /// Called by the PlayerManager to set the new position for this character to move to.
     /// </summary>
-    public void SetTargetTransformation(TransformationDto newTransformation)
+    public void SetTargetTransformation(TransformationDC newTransformation)
     {
         targetPosition = new Vector3(
             newTransformation.positionX,

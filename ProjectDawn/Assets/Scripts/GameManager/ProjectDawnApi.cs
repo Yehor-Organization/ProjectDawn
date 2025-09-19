@@ -1,28 +1,84 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.AspNetCore.Http.Connections;
+﻿using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR.Client;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Networking;
 
 /// <summary>
 /// Handles the SignalR connection to the server.
 /// This script is now controlled by the GameManager and delegates player actions to the PlayerManager.
 /// </summary>
+[RequireComponent(typeof(GameManager))]
+[RequireComponent(typeof(PlayerManager))]
+
 public class ProjectDawnApi : MonoBehaviour
 {
-    [Header("Component References")]
-    [Tooltip("Drag the GameObject that has the PlayerManager script on it here.")]
-    public PlayerManager playerManager;
+    public static ProjectDawnApi Instance { get; private set; }
+
+    [Header("API Settings")]
+    [SerializeField]
+    private string serverBaseUrl = "https://localhost:7123";
+
+    private GameManager gameManager;
+    private PlayerManager playerManager;
 
     private HubConnection connection;
     private string currentFarmId;
     private int currentPlayerId;
 
-    [SerializeField]
-    private GameManager gameManager;
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
 
-    public async Task<bool> ConnectAndJoin(string serverUrl, string farmId, int playerId)
+        DontDestroyOnLoad(gameObject);
+
+        playerManager = GetComponent<PlayerManager>();
+        gameManager = GetComponent<GameManager>();
+        if (playerManager == null)
+            Debug.LogError("[DEBUG] PlayerManager component not found on GameObject!");
+        if (gameManager == null)
+            Debug.LogError("[DEBUG] GameManager component not found on GameObject!");
+    }
+
+    private async Task<T> GetFromApi<T>(string endpoint)
+    {
+        string url = $"{serverBaseUrl}/{endpoint}";
+        using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
+        {
+            await webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.Success)
+            {
+                string jsonResponse = webRequest.downloadHandler.text;
+                return JsonConvert.DeserializeObject<T>(jsonResponse);
+            }
+            else
+            {
+                Debug.LogError($"[GameManager] API request to {url} failed: {webRequest.error}");
+                return default; // null for ref types, 0/false for value types
+            }
+        }
+    }
+
+    public Task<FarmStateDC> GetFarmState(string farmId)
+    {
+        return GetFromApi<FarmStateDC>($"api/Farms/{farmId}");
+    }
+
+    public Task<List<FarmInfoDC>> GetAllFarms()
+    {
+        return GetFromApi<List<FarmInfoDC>>("api/Farms");
+    }
+
+
+
+
+
+    public async Task<bool> ConnectAndJoin(string farmId, int playerId)
     {
         this.currentFarmId = farmId;
         this.currentPlayerId = playerId;
@@ -36,7 +92,7 @@ public class ProjectDawnApi : MonoBehaviour
         try
         {
             connection = new HubConnectionBuilder()
-                .WithUrl($"{serverUrl}/farmHub", options =>
+                .WithUrl($"{serverBaseUrl}/farmHub", options =>
                 {
                     options.Transports = HttpTransportType.WebSockets;
                 })
@@ -144,7 +200,7 @@ public class ProjectDawnApi : MonoBehaviour
             });
         });
 
-        connection.On<int, TransformationDto>("PlayerTransformationUpdated", (updatedPlayerId, newTransformation) =>
+        connection.On<int, TransformationDC>("PlayerTransformationUpdated", (updatedPlayerId, newTransformation) =>
         {
             MainThreadDispatcher.Enqueue(() =>
             {
@@ -194,7 +250,7 @@ public class ProjectDawnApi : MonoBehaviour
         }
     }
 
-    public async Task SendTransformationUpdate(TransformationDto transformation)
+    public async Task SendTransformationUpdate(TransformationDC transformation)
     {
         if (connection == null || connection.State != HubConnectionState.Connected)
             return;

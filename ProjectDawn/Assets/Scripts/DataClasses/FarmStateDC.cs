@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 
 [System.Serializable]
-public class FarmStateDto
+public class FarmStateDC
 {
     public int id;
     public string name;
     public string ownerName;
-    public List<PlacedObjectDto> placedObjects;
-    public List<VisitorInfoDto> visitors;
+    public List<PlacedObjectDC> placedObjects;
+    public List<VisitorInfoDC> visitors;
 
 }

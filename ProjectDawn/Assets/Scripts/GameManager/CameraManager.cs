@@ -2,38 +2,39 @@ using UnityEngine;
 
 public class CameraManager : MonoBehaviour
 {
-    public static CameraManager Instance;
+    public static CameraManager Instance { get; private set; }
 
+    [Header("Camera Reference")]
+    [SerializeField]
+    private Camera mainCam;
+
+    private LocalPlayerController localPlayerController;
+    private Vector3 offset;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
 
-    [Header("Camera Reference")]
-    [SerializeField] private Camera mainCam;
-
-    private LocalPlayerController target;
-    private Vector3 offset;
-
     void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+        
+        DontDestroyOnLoad(gameObject);
 
-            if (mainCam != null)
-            {
-                initialPosition = mainCam.transform.position;
-                initialRotation = mainCam.transform.rotation;
-            }
-            else
-            {
-                Debug.LogError("[CameraManager] Main camera is not assigned in Inspector!");
-            }
+        if (mainCam != null)
+        {
+            initialPosition = mainCam.transform.position;
+            initialRotation = mainCam.transform.rotation;
         }
         else
         {
-            Destroy(gameObject);
+            Debug.LogError("[CameraManager] Main camera is not assigned in Inspector!");
         }
+
+    }
+
+    public Camera GetCamera()
+    {
+        return mainCam;
     }
 
     public void ResetCamera(LocalPlayerController ctrl)
@@ -44,23 +45,21 @@ public class CameraManager : MonoBehaviour
             return;
         }
 
-        // snap back to original editor pose
         mainCam.transform.position = initialPosition;
         mainCam.transform.rotation = initialRotation;
 
-        // calculate and store offset
         offset = mainCam.transform.position - ctrl.transform.position;
         ctrl.SetCamera(mainCam, offset);
 
-        target = ctrl;
+        localPlayerController = ctrl;
     }
 
     void LateUpdate()
     {
-        if (mainCam != null && target != null)
+        if (mainCam != null && localPlayerController != null)
         {
-            mainCam.transform.position = target.transform.position + offset;
-            mainCam.transform.LookAt(target.transform.position);
+            mainCam.transform.position = localPlayerController.transform.position + offset;
+            mainCam.transform.LookAt(localPlayerController.transform.position);
         }
     }
 }

@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 public class FarmListUI : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
     [SerializeField] private RectTransform farmListContainer;
     [SerializeField] private GameObject farmListItemPrefab;
-    [SerializeField] private GameObject joystickUI;
+    [SerializeField] private GameObject inGameUI;
     [SerializeField] private float refreshPeroid = 1f;
 
     void Start()
     {
-        joystickUI.SetActive(false);
+        inGameUI.SetActive(false);
     }
 
     void OnEnable()
@@ -27,49 +28,22 @@ public class FarmListUI : MonoBehaviour
     {
         while (true)
         {
-            yield return FetchFarms(); 
+            yield return PopulateFarmListAsync(); 
             yield return new WaitForSeconds(interval); 
         }
     }
 
-    private IEnumerator FetchFarms()
-    {
-        string url = $"{gameManager.serverBaseUrl}/api/Farms";
-        Debug.Log($"[DEBUG][FarmListUI] Fetching farms from: {url}");
-
-        using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
-        {
-            yield return webRequest.SendWebRequest();
-
-            if (webRequest.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError($"[DEBUG][FarmListUI] Failed to fetch farms → {webRequest.error}");
-                yield break;
-            }
-
-            Debug.Log($"[DEBUG][FarmListUI] Response received: {webRequest.downloadHandler.text}");
-
-            var farms = JsonConvert.DeserializeObject<List<FarmInfoDto>>(webRequest.downloadHandler.text);
-
-            if (farms == null)
-            {
-                Debug.LogError("[DEBUG][FarmListUI] Deserialized farms list is NULL!");
-                yield break;
-            }
-
-            Debug.Log($"[DEBUG][FarmListUI] Parsed {farms.Count} farms from API.");
-            PopulateFarmList(farms);
-        }
-    }
 
     public void FarmJoined()
     {
-        joystickUI.SetActive(true);
+        inGameUI.SetActive(true);
         gameObject.SetActive(false);
     }
 
-    private void PopulateFarmList(List<FarmInfoDto> farms)
+    private async Task PopulateFarmListAsync()
     {
+        List<FarmInfoDC> farms = await ProjectDawnApi.Instance.GetAllFarms();
+
         Debug.Log("[DEBUG][FarmListUI] Clearing old farm list items...");
         foreach (Transform child in farmListContainer)
             Destroy(child.gameObject);

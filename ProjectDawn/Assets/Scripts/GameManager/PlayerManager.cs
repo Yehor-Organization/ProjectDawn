@@ -5,40 +5,66 @@ using UnityEngine;
 /// Manages the spawning, tracking, and updating of all player characters in the scene.
 /// This script acts as the central directory for player GameObjects.
 /// </summary>
+[RequireComponent(typeof(ObjectManager))]
+[RequireComponent(typeof(CameraManager))]
 public class PlayerManager : MonoBehaviour
 {
     [Header("Prefabs")]
-    public GameObject localPlayerPrefab;
-    public GameObject remotePlayerPrefab;
+    [SerializeField]
+    private GameObject localPlayerPrefab;
+    [SerializeField]
+    private GameObject remotePlayerPrefab;
 
     [Header("Default Settings")]
     [Tooltip("Default movement speed for all players.")]
-    public float defaultMoveSpeed = 15f;
+    [SerializeField]
+    private float defaultMoveSpeed = 15f;
 
     [Tooltip("Default rotation speed for all players.")]
-    public float defaultRotateSpeed = 300f;
+    [SerializeField]
+    private float defaultRotateSpeed = 300f;
 
     [Tooltip("Minimum distance change before sending a position update.")]
-    public float positionUpdateThreshold = 0.01f;
-    public float rotationUpdateThreshold = 0.01f;
+    [SerializeField]
+    private float positionUpdateThreshold = 0.01f;
+    [SerializeField]
+    private float rotationUpdateThreshold = 0.01f;
 
     [Header("Spawn Settings")]
-    public Transform defaultSpawnPoint;
-    public float spawnHeightBuffer = 2f;
+    [SerializeField]
+    private Transform defaultSpawnPoint;
+    [SerializeField]
+    private float spawnHeightBuffer = 2f;
 
-    // Track remote players by their ID
+
+
+    private ObjectManager objectManager;
+    private CameraManager cameraManager;
+
     private readonly Dictionary<int, GameObject> remotePlayers = new Dictionary<int, GameObject>();
 
+    void Awake()
+    {
+        objectManager = GetComponent<ObjectManager>();
+        cameraManager = GetComponent<CameraManager>();
+        if (cameraManager == null)
+        {
+            Debug.LogError("PlayerManager requires a CameraManager in the scene!");
+        }
+        if (objectManager == null)
+        {
+            Debug.LogError("PlayerManager requires an ObjectManager in the scene!");
+        }
+
+    }
     /// <summary>
     /// Spawns either a local or remote player.
     /// </summary>
     public void SpawnPlayer(int playerId, bool isLocalPlayer)
     {
-        // Base spawn pos/rot
         Vector3 spawnPos = defaultSpawnPoint != null ? defaultSpawnPoint.position : Vector3.zero;
         Quaternion spawnRot = defaultSpawnPoint != null ? defaultSpawnPoint.rotation : Quaternion.identity;
 
-        // ✅ Adjust Y based on terrain height
         if (Terrain.activeTerrain != null)
         {
             float groundY = Terrain.activeTerrain.SampleHeight(spawnPos);
@@ -50,22 +76,23 @@ public class PlayerManager : MonoBehaviour
             if (localPlayerPrefab != null)
             {
                 var go = Instantiate(localPlayerPrefab, spawnPos, spawnRot);
+
                 var localCtrl = go.GetComponent<LocalPlayerController>();
                 if (localCtrl != null)
                 {
-                    // Initialize movement and network settings
                     localCtrl.Initialize(defaultMoveSpeed, defaultRotateSpeed, positionUpdateThreshold, rotationUpdateThreshold);
 
-                    // Reset the camera using the persistent CameraManager
-                    if (CameraManager.Instance != null)
+                    if (cameraManager != null)
                     {
-                        CameraManager.Instance.ResetCamera(localCtrl);
+                        cameraManager.ResetCamera(localCtrl);
                     }
                 }
                 else
                 {
                     Debug.LogWarning("LocalPlayer prefab missing LocalPlayerController!");
                 }
+
+             
             }
             else
             {
@@ -137,7 +164,7 @@ public class PlayerManager : MonoBehaviour
     /// <summary>
     /// Updates a remote player’s position/rotation from the network.
     /// </summary>
-    public void UpdatePlayerTransformation(int playerId, TransformationDto newTransformation)
+    public void UpdatePlayerTransformation(int playerId, TransformationDC newTransformation)
     {
         if (remotePlayers.TryGetValue(playerId, out GameObject playerObj))
         {

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
 [System.Serializable]
-public class VisitorInfoDto
+public class VisitorInfoDC
 {
     public int playerId;
     public string playerName;

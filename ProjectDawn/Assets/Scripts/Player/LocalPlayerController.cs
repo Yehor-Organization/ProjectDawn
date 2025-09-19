@@ -109,7 +109,7 @@ public class LocalPlayerController : MonoBehaviour
             lastPosition = transform.position;
             lastRotation = transform.rotation.eulerAngles;
 
-            var transformation = new TransformationDto
+            var transformation = new TransformationDC
             {
                 positionX = transform.position.x,
                 positionY = transform.position.y,

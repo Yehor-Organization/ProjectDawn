@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 
 [System.Serializable]
-public class PlacedObjectDto
+public class PlacedObjectDC
 {
     public int id;
     public string type;
-    public TransformationDto transformation;
+    public TransformationDC transformation;
 }

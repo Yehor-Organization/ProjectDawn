@@ -7,43 +7,45 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using System.Threading.Tasks;
-
+[RequireComponent(typeof(ObjectManager))]
+[RequireComponent(typeof(ProjectDawnApi))]
+[RequireComponent(typeof(PlayerManager))]
 public class GameManager : MonoBehaviour
 {
-    [Header("API Settings")]
-    public string serverBaseUrl = "https://localhost:7123";
-
     [Header("Game State")]
-    public string farmId;
-    [SerializeField] private int playerId = 1;
-    public TMP_InputField playerIdInput;  // assign in Inspector
 
-    [Header("Object Prefabs")]
-    public List<ObjectPrefabMappingDataModel> objectPrefabs = new List<ObjectPrefabMappingDataModel>();
-    private Dictionary<string, GameObject> prefabDictionary = new Dictionary<string, GameObject>();
+    [SerializeField] 
+    private int playerId = 1;
+    [SerializeField]
+    private TMP_InputField playerIdInput; 
 
     [Header("Component References")]
-    public ProjectDawnApi realTimeClient;
 
-    public GameObject Menu;
-    public GameObject Joystick;
-    public Button SettingsButton;
+    [SerializeField]
+    private GameObject Menu;
+    [SerializeField]
+    private GameObject inGameUI;
+    [SerializeField]
+    private Button SettingsButton;
+
+    private ObjectManager objectManager;
+    private ProjectDawnApi projectDawnApi;
+    private PlayerManager playerManager;
 
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
 
-        if (FindObjectsOfType<GameManager>().Length > 1)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        objectManager = GetComponent<ObjectManager>();
+        projectDawnApi = GetComponent<ProjectDawnApi>();
+        playerManager = GetComponent<PlayerManager>();
 
-        foreach (var mapping in objectPrefabs)
-        {
-            if (mapping.prefab != null && !string.IsNullOrEmpty(mapping.typeKey))
-                prefabDictionary[mapping.typeKey] = mapping.prefab;
-        }
+        if (playerManager == null)
+            Debug.LogError("[GameManager] PlayerManager component is missing!");
+        if (objectManager == null)
+            Debug.LogError("[GameManager] ObjectManager component is missing!");
+        if (projectDawnApi == null)
+            Debug.LogError("[GameManager] ProjectDawnApi component is missing!");
     }
 
     void Start()
@@ -82,117 +84,74 @@ public class GameManager : MonoBehaviour
         bool isActive = Menu.activeSelf;
         Menu.SetActive(!isActive);
 
-        if (Joystick != null)
-            Joystick.SetActive(isActive);
+        if (inGameUI != null)
+            inGameUI.SetActive(isActive);
     }
-    public async Task<bool> JoinFarm(string newFarmId)
+    public async Task<bool> JoinFarm(string farmId)
     {
-        if (!string.IsNullOrEmpty(farmId))
+
+        FarmStateDC farmData = await projectDawnApi.GetFarmState(farmId);
+        BuildFarm(farmData);
+
+        if (projectDawnApi != null)
         {
-            Debug.Log($"[GameManager] Already connected to farm {farmId}. Leaving before joining {newFarmId}...");
-            await ResetToMenu();
-        }
-
-        Debug.Log($"[GameManager] Joining farm: {newFarmId}");
-        farmId = newFarmId;
-
-        string url = $"{serverBaseUrl}/api/Farms/{farmId}";
-        using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
-        {
-            await webRequest.SendWebRequest();
-
-            if (webRequest.result == UnityWebRequest.Result.Success)
+            bool success = await projectDawnApi.ConnectAndJoin(farmId, playerId);
+            if (success)
             {
-                string jsonResponse = webRequest.downloadHandler.text;
-                FarmStateDto farmData = JsonConvert.DeserializeObject<FarmStateDto>(jsonResponse);
-                BuildFarm(farmData);
-
-                if (realTimeClient != null)
-                {
-                    bool success = await realTimeClient.ConnectAndJoin(serverBaseUrl, farmId, playerId);
-                    if (success)
-                    {
-                        Debug.Log("[GameManager] Successfully joined farm.");
-                        return true;
-                    }
-                    else
-                    {
-                        Debug.LogError("[GameManager] Failed to join farm (server rejected or connection issue).");
-                        await ResetToMenu(); // instead of farmId=null + ClearFarm()
-                        return false;
-                    }
-                }
-                else
-                {
-                    Debug.LogError("RealTimeClient (ProjectDawnApi) is not assigned!");
-                    await ResetToMenu();
-                    return false;
-                }
+                Debug.Log("[GameManager] Successfully joined farm.");
+                return true;
             }
             else
             {
-                Debug.LogError($"Failed to fetch farm state: {webRequest.error}");
-                await ResetToMenu();
+                Debug.LogError("[GameManager] Failed to join farm (server rejected or connection issue).");
+                await ResetToMenu(); // instead of farmId=null + ClearFarm()
                 return false;
             }
         }
+        else
+        {
+            Debug.LogError("projectDawnApi (ProjectDawnApi) is not assigned!");
+            await ResetToMenu();
+            return false;
+        }
+       
+        
     }
     public async Task ResetToMenu()
     {
         Debug.Log("[GameManager] Resetting game state to menu...");
 
-        // Clear farm objects + disconnect networking
         await LeaveFarm();
 
-        // Show farm selection again
         var farmUI = FindObjectOfType<FarmListUI>();
         if (farmUI != null)
             farmUI.gameObject.SetActive(true);
 
-        // Hide joystick if it exists
-        if (Joystick != null)
-            Joystick.SetActive(false);
+        if (inGameUI != null)
+            inGameUI.SetActive(false);
 
-        // Reset farmId just to be safe
-        farmId = null;
     }
     public async Task LeaveFarm()
     {
         Debug.Log("[GameManager] Leaving current farm...");
 
-        // ✅ Clear farm objects
         ClearFarm();
 
-        // ✅ Disconnect networking
-        if (realTimeClient != null)
-            await realTimeClient.DisconnectAsync();
-
-        // ✅ Reset state
-        farmId = null;
+        if (projectDawnApi != null)
+            await projectDawnApi.DisconnectAsync();
     }
 
     public void ForceLeaveFarmImmediate()
     {
         Debug.Log("[GameManager] Force leaving farm immediately...");
 
-        // Clear players instantly
-        if (realTimeClient != null && realTimeClient.playerManager != null)
-        {
-            realTimeClient.playerManager.ClearAllPlayers();
-        }
-
-        // Clear farm objects instantly
+        playerManager.ClearAllPlayers();
+        
         ClearFarm();
 
-        // Reset state
-        farmId = null;
-
-        // Reset UI
         if (Menu != null) Menu.SetActive(true);
-        if (Joystick != null) Joystick.SetActive(false);
+        if (inGameUI != null) inGameUI.SetActive(false);
 
-        // ❌ DO NOT call StopAsync here!
-        // Let ProjectDawnApi.StopConnectionOnly() run separately if needed
     }
     private void ClearFarm()
     {
@@ -200,32 +159,16 @@ public class GameManager : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    private void BuildFarm(FarmStateDto farmData)
+    private void BuildFarm(FarmStateDC farmData)
     {
-        ClearFarm();
+        if (objectManager != null)
+            objectManager.ClearAll();
 
         foreach (var placedObject in farmData.placedObjects)
         {
-            if (prefabDictionary.TryGetValue(placedObject.type, out GameObject prefab))
-            {
-                Vector3 position = new Vector3(
-                    placedObject.transformation.positionX,
-                    placedObject.transformation.positionY,
-                    placedObject.transformation.positionZ
-                );
-                Quaternion rotation = Quaternion.Euler(
-                    placedObject.transformation.rotationX,
-                    placedObject.transformation.rotationY,
-                    placedObject.transformation.rotationZ
-                );
-
-                Instantiate(prefab, position, rotation, transform);
-            }
-            else
-            {
-                Debug.LogWarning($"No prefab found for object type: '{placedObject.type}'. Skipping.");
-            }
+            objectManager.PlaceObject(placedObject.id, placedObject.type, placedObject.transformation);
         }
     }
+
 }
 

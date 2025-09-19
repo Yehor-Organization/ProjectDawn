@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 
 [System.Serializable]
-public class FarmInfoDto
+public class FarmInfoDC
 {
     public int id;
     public string name;
     public string ownerName;
-    public List<VisitorInfoDto> visitors;
+    public List<VisitorInfoDC> visitors;
 }
