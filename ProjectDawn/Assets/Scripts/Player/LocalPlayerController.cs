@@ -36,6 +36,9 @@ public class LocalPlayerController : MonoBehaviour
 
     private float lastSendTime;
 
+    public Vector3 SmoothedPosition => rb != null ? rb.position : transform.position;
+
+
     public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold, float rotationUpdateThreshold)
     {
         this.moveSpeed = moveSpeed;
