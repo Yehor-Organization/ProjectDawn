@@ -21,6 +21,7 @@ public class LocalPlayerController : MonoBehaviour
     [Header("Networking")]
     public float positionUpdateThreshold = 0.05f;
     public float rotationUpdateThreshold = 1f;
+    [SerializeField] private float sendInterval = 0.1f; // send 10 times per second
 
     private FixedJoystick joystick;
     private ProjectDawnApi networkClient;
@@ -32,6 +33,8 @@ public class LocalPlayerController : MonoBehaviour
     // --- Momentum state ---
     private Vector3 currentVelocity; // movement momentum
     private float rotationVelocity;  // rotation momentum
+
+    private float lastSendTime;
 
     public void Initialize(float moveSpeed, float rotateSpeed, float positionUpdateThreshold, float rotationUpdateThreshold)
     {
@@ -62,6 +65,7 @@ public class LocalPlayerController : MonoBehaviour
 
         lastPosition = transform.position;
         lastRotation = transform.rotation.eulerAngles;
+        lastSendTime = Time.time;
     }
 
     public void SetCamera(Camera cam, Vector3 offset)
@@ -119,8 +123,9 @@ public class LocalPlayerController : MonoBehaviour
         bool moved = Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold;
         bool rotated = Vector3.Distance(transform.rotation.eulerAngles, lastRotation) > rotationUpdateThreshold;
 
-        if (moved || rotated)
+        if ((moved || rotated) && Time.time - lastSendTime >= sendInterval)
         {
+            lastSendTime = Time.time;
             lastPosition = transform.position;
             lastRotation = transform.rotation.eulerAngles;
 
