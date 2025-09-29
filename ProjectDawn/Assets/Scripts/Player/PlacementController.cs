@@ -6,7 +6,6 @@ public class PlacementController : MonoBehaviour
 {
     [Header("Placement Settings")]
     [SerializeField] private string objectTypeToPlace = "Tree";
-    [SerializeField] private LayerMask placementMask;
 
     [Tooltip("Maximum distance from player at which objects can be placed.")]
     [SerializeField] private float placementRadius = 5f;
@@ -39,46 +38,35 @@ public class PlacementController : MonoBehaviour
     }
 
     // ---------------- PREVIEW ----------------
-    private void UpdatePreview(Vector2 screenPosition)
+private void UpdatePreview(Vector2 screenPosition)
+{
+    Ray ray = CameraManager.Instance.GetCamera().ScreenPointToRay(screenPosition);
+
+    if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity))
     {
-        Ray ray = CameraManager.Instance.GetCamera().ScreenPointToRay(screenPosition);
-
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, placementMask))
+        // Create preview if it doesn’t exist
+        if (previewInstance == null)
         {
-            // Only allow terrain hits
-            if (!(hit.collider is TerrainCollider))
+            GameObject prefab = ObjectManager.Instance.GetPrefab(objectTypeToPlace);
+            if (prefab != null)
             {
-                if (previewInstance != null) previewInstance.SetActive(false);
-                previewValid = false;
-                return;
+                previewInstance = Instantiate(prefab);
+                MakeTransparent(previewInstance, 0.5f);
+                DisablePhysics(previewInstance);
             }
+        }
 
+        if (previewInstance != null)
+        {
+            previewInstance.transform.position = hit.point;
+            previewInstance.SetActive(true);
+
+            // Check if hit is terrain
             Terrain terrain = hit.collider.GetComponent<Terrain>();
-            if (terrain == null)
-            {
-                if (previewInstance != null) previewInstance.SetActive(false);
-                previewValid = false;
-                return;
-            }
 
-            // Create preview if it doesn’t exist
-            if (previewInstance == null)
+            if (terrain != null && hit.collider is TerrainCollider)
             {
-                GameObject prefab = ObjectManager.Instance.GetPrefab(objectTypeToPlace);
-                if (prefab != null)
-                {
-                    // 👇 parent preview to this controller
-                    previewInstance = Instantiate(prefab);
-                    MakeTransparent(previewInstance, 0.5f);
-                    DisablePhysics(previewInstance);
-                }
-            }
-
-            if (previewInstance != null)
-            {
-                previewInstance.transform.position = hit.point;
-                previewInstance.SetActive(true);
-
+                // ✅ Valid placement checks only on terrain
                 float distance = Vector3.Distance(transform.position, hit.point);
                 bool tooFar = distance > placementRadius;
                 bool tooCloseToPlayer = distance < playerMaskRadius;
@@ -86,19 +74,26 @@ public class PlacementController : MonoBehaviour
 
                 previewValid = !(tooFar || tooCloseToPlayer || blocked);
 
-                // Set color
                 SetPreviewColor(previewInstance, previewValid
-                    ? new Color(0f, 1f, 0f, 0.5f) // ✅ green
-                    : new Color(1f, 0f, 0f, 0.5f) // ❌ red
+                    ? new Color(0f, 1f, 0f, 0.5f)  // green
+                    : new Color(1f, 0f, 0f, 0.5f)  // red
                 );
             }
-        }
-        else if (previewInstance != null)
-        {
-            previewInstance.SetActive(false);
-            previewValid = false;
+            else
+            {
+                // ❌ Not terrain → always invalid (red)
+                previewValid = false;
+                SetPreviewColor(previewInstance, new Color(1f, 0f, 0f, 0.5f));
+            }
         }
     }
+    else if (previewInstance != null)
+    {
+        previewInstance.SetActive(false);
+        previewValid = false;
+    }
+}
+
 
     // ---------------- FINAL PLACEMENT ----------------
     private async void TryPlaceAtPreview()

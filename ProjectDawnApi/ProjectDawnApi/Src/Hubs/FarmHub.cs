@@ -11,12 +11,13 @@ namespace ProjectDawnApi
 {
     public class FarmHub : Hub
     {
+        private const int PLAYER_DATA_SAVE_DELAY_SEC = 60;
         private readonly ProjectDawnDbContext _context;
         private readonly ILogger<FarmHub> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
 
         // Throttle saves per player
-        private static readonly TimeSpan TransformationSaveInterval = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan TransformationSaveInterval = TimeSpan.FromSeconds(PLAYER_DATA_SAVE_DELAY_SEC);
         private static readonly Dictionary<int, DateTime> LastTransformationSave = new();
 
         public FarmHub(ProjectDawnDbContext context, ILogger<FarmHub> logger, IServiceScopeFactory scopeFactory)
