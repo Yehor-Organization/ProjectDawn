@@ -55,6 +55,7 @@ MonoBehaviour:
   rotationInertia: 0.15
   positionUpdateThreshold: 0.05
   rotationUpdateThreshold: 1
+  sendInterval: 0.1
 --- !u!54 &5165134369686666578
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -117,10 +118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10b3d4fc29ce2d941909ba70d6317d7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlacementController
-  objectTypeToPlace: Tree
-  placementMask:
-    serializedVersion: 2
-    m_Bits: 8
+  objectTypeToPlace: farmTile
   placementRadius: 15
   playerMaskRadius: 0
 --- !u!1 &4183716555514273602
