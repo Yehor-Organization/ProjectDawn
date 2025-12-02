@@ -15,10 +15,20 @@ namespace ProjectDawnApi
         public DbSet<FarmDataModel> Farms { get; set; }
         public DbSet<PlacedObjectDataModel> PlacedObjects { get; set; }
         public DbSet<FarmVisitorDataModel> FarmVisitors { get; set; }
+        public DbSet<InventoryItemDataModel> InventoryItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // -----------------------------
+            // Player → Inventory (one-to-many)
+            // -----------------------------
+            modelBuilder.Entity<PlayerDataModel>()
+                .HasMany(p => p.Inventory)
+                .WithOne(i => i.Player)
+                .HasForeignKey(i => i.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // -----------------------------
             // Farm → Owner (many-to-one)

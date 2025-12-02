@@ -27,7 +27,7 @@ public class ProjectDawnApi : MonoBehaviour
 
     private HubConnection connection;
     private string currentFarmId;
-    private int currentPlayerId;
+    public int currentPlayerId { get; private set; }
 
     private void Awake()
     {
@@ -99,9 +99,44 @@ public class ProjectDawnApi : MonoBehaviour
         return GetFromApi<List<FarmInfoDC>>("api/Farms");
     }
 
+    public Task<List<InventoryItemDC>> GetInventory(int playerId)
+    {
+        return GetFromApi<List<InventoryItemDC>>($"api/players/{playerId}/inventory");
+    }
 
+    public async Task AddItem(int playerId, string itemName, int amount)
+    {
+        string url = $"{serverBaseUrl}/api/players/{playerId}/inventory/add";
+        var requestData = new { ItemName = itemName, Amount = amount };
+        string json = JsonConvert.SerializeObject(requestData);
 
+        using (UnityWebRequest webRequest = UnityWebRequest.Post(url, json, "application/json"))
+        {
+            await webRequest.SendWebRequest();
 
+            if (webRequest.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"[ProjectDawnApi] Failed to add item: {webRequest.error}");
+            }
+        }
+    }
+
+    public async Task RemoveItem(int playerId, string itemName, int amount)
+    {
+        string url = $"{serverBaseUrl}/api/players/{playerId}/inventory/remove";
+        var requestData = new { ItemName = itemName, Amount = amount };
+        string json = JsonConvert.SerializeObject(requestData);
+
+        using (UnityWebRequest webRequest = UnityWebRequest.Post(url, json, "application/json"))
+        {
+            await webRequest.SendWebRequest();
+
+            if (webRequest.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"[ProjectDawnApi] Failed to remove item: {webRequest.error}");
+            }
+        }
+    }
 
 public async Task<bool> ConnectAndJoin(string farmId, int playerId)
 {
@@ -184,6 +219,18 @@ public async Task<bool> ConnectAndJoin(string farmId, int playerId)
 
         // Spawn myself last
         playerManager.SpawnPlayer(playerId, true);
+
+        // Load Inventory
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.LoadInventory(playerId);
+        }
+        else
+        {
+             // Try to find it if it wasn't a singleton yet or attached
+             var invManager = FindObjectOfType<InventoryManager>();
+             if (invManager != null) invManager.LoadInventory(playerId);
+        }
 
         return true;
     }
