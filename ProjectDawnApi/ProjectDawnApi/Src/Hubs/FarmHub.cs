@@ -202,23 +202,32 @@ namespace ProjectDawnApi
         /// </summary>
         public override async Task OnDisconnectedAsync(Exception exception)
         {
-            _logger.LogInformation($"Connection {Context.ConnectionId} disconnected. Reason: {exception?.Message}");
-
-            var visitor = await _context.FarmVisitors
-                .FirstOrDefaultAsync(v => v.ConnectionId == Context.ConnectionId);
-
-            if (visitor != null)
+            try
             {
-                _context.FarmVisitors.Remove(visitor);
-                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Connection {Context.ConnectionId} disconnected. Reason: {exception?.Message}");
 
-                await Clients.OthersInGroup(visitor.FarmId.ToString())
-                    .SendAsync("PlayerLeft", visitor.PlayerId);
+                var visitor = await _context.FarmVisitors
+                    .FirstOrDefaultAsync(v => v.ConnectionId == Context.ConnectionId);
 
-                _logger.LogInformation($"Player {visitor.PlayerId} auto-removed from farm {visitor.FarmId} on disconnect.");
+                if (visitor != null)
+                {
+                    _context.FarmVisitors.Remove(visitor);
+                    await _context.SaveChangesAsync();
+
+                    await Clients.OthersInGroup(visitor.FarmId.ToString())
+                        .SendAsync("PlayerLeft", visitor.PlayerId);
+
+                    _logger.LogInformation($"Player {visitor.PlayerId} auto-removed from farm {visitor.FarmId} on disconnect.");
+                }
             }
-
-            await base.OnDisconnectedAsync(exception);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling disconnection for connection {ConnectionId}", Context.ConnectionId);
+            }
+            finally
+            {
+                await base.OnDisconnectedAsync(exception);
+            }
         }
     }
 }
