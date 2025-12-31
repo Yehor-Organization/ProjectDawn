@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ProjectDawnApi.Src.Controllers.Players;
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class InventoryController : ControllerBase

@@ -12,6 +12,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ProjectDawnDbContext>(options =>
     options.UseSqlite("Data Source=projectdawn.db"));
 
+// -------------------- Auth --------------------
+builder.Services.AddProjectDawnAuthentication(builder.Configuration);
+
 // -------------------- SignalR --------------------
 builder.Services.AddSignalR()
     .AddJsonProtocol(options =>
@@ -39,6 +42,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication(); // stays here
 app.UseAuthorization();
 
 // -------------------- Endpoints --------------------
