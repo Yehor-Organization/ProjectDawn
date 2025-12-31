@@ -1,96 +1,135 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
+using ProjectDawnApi.Src.Services.Farm;
+using System.Security.Claims;
 
-namespace ProjectDawnApi.Src.Controllers.Farms
+namespace ProjectDawnApi.Src.Controllers.Farms;
+
+[Authorize]
+[ApiController]
+[Route("api/[controller]")]
+public class FarmsController : ControllerBase
 {
-    [Authorize]
-    [Route("api/[controller]")]
-    [ApiController]
-    public class FarmsController : ControllerBase
+    private readonly FarmCreationService farmCreationService;
+    private readonly FarmManagementService farmManagementService;
+    private readonly FarmObjectService farmObjectService;
+    private readonly FarmQueryService farmQueryService;
+    private readonly FarmSessionService farmSessionService;
+    private readonly IHubContext<FarmHub> hubContext;
+
+    public FarmsController(
+        FarmCreationService farmCreationService,
+        FarmManagementService farmManagementService,
+        FarmQueryService farmQueryService,
+        FarmObjectService farmObjectService,
+        FarmSessionService farmSessionService,
+        IHubContext<FarmHub> hubContext)
     {
-        private readonly ProjectDawnDbContext context;
+        this.farmCreationService = farmCreationService;
+        this.farmManagementService = farmManagementService;
+        this.farmQueryService = farmQueryService;
+        this.farmObjectService = farmObjectService;
+        this.farmSessionService = farmSessionService;
+        this.hubContext = hubContext;
+    }
 
-        public FarmsController(ProjectDawnDbContext context)
-        {
-            this.context = context;
-        }
+    private int PlayerId =>
+        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetFarm(int id)
+    [HttpPost("create")]
+    public async Task<IActionResult> CreateFarm(
+        [FromBody] CreateFarmRequestDTO request)
+    {
+        try
         {
-            var farm = await context.Farms
-                .Include(f => f.Owner)
-                .Include(f => f.PlacedObjects)
-                .Include(f => f.Visitors)
-                    .ThenInclude(v => v.PlayerDataModel)
-                .Where(f => f.Id == id)
-                .AsNoTracking()
-                .Select(f => new
+            var farm = await farmCreationService.CreateAsync(
+                PlayerId,
+                request.Name);
+
+            return CreatedAtAction(
+                nameof(GetFarm),
+                new { id = farm.Id },
+                new
                 {
-                    f.Id,
-                    f.Name,
-                    OwnerName = f.Owner != null ? f.Owner.Name : "N/A",
-                    PlacedObjects = f.PlacedObjects.Select(po => new
+                    farm.Id,
+                    farm.Name,
+                    Owners = farm.Owners.Select(o => new
                     {
-                        id = po.Id,   // 👈 now a Guid
-                        po.Type,
-                        Transformation = new
-                        {
-                            po.Transformation.positionX,
-                            po.Transformation.positionY,
-                            po.Transformation.positionZ,
-                            po.Transformation.rotationX,
-                            po.Transformation.rotationY,
-                            po.Transformation.rotationZ
-                        }
-                    }),
-                    Visitors = f.Visitors.Select(v => new
-                    {
-                        v.PlayerId,
-                        PlayerName = v.PlayerDataModel != null ? v.PlayerDataModel.Name : "Unknown",
-                        Transformation = new
-                        {
-                            v.Transformation.positionX,
-                            v.Transformation.positionY,
-                            v.Transformation.positionZ,
-                            v.Transformation.rotationX,
-                            v.Transformation.rotationY,
-                            v.Transformation.rotationZ
-                        }
+                        o.Id,
+                        o.Name
                     })
-                })
-                .FirstOrDefaultAsync();
-
-            if (farm == null) return NotFound();
-
-            return Ok(farm);
+                });
         }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetFarms()
+        catch (InvalidOperationException ex)
         {
-            var farms = await context.Farms
-                .Include(f => f.Owner)
-                .Include(f => f.Visitors)
-                    .ThenInclude(v => v.PlayerDataModel) // 👈 include the right nav property
-                .Select(f => new
-                {
-                    id = f.Id,
-                    name = f.Name,
-                    ownerName = f.Owner != null ? f.Owner.Name : "N/A",
-                    visitors = f.Visitors.Select(v => new VisitorSummaryDM
-                    {
-                        playerId = v.PlayerId,
-                        playerName = v.PlayerDataModel != null ? v.PlayerDataModel.Name : "Unknown"
-                    }).ToList()
-                })
-                .ToListAsync();
+            return Conflict(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
+    }
 
-            return Ok(farms);
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteFarm(int id)
+    {
+        try
+        {
+            await farmManagementService.DeleteAsync(id, PlayerId);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetFarm(int id)
+    {
+        var farm = await farmQueryService.GetFarmAsync(id);
+        return farm == null ? NotFound() : Ok(farm);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetFarms()
+    {
+        var farms = await farmQueryService.GetFarmsAsync();
+        return Ok(farms);
+    }
+
+    [HttpPost("objects")]
+    public async Task<IActionResult> PlaceObject(
+        [FromBody] PlaceObjectDTO dto)
+    {
+        int? farmId =
+            await farmSessionService.GetCurrentFarmForPlayerAsync(PlayerId);
+
+        if (farmId == null)
+            return BadRequest("Player is not in a farm.");
+
+        try
+        {
+            var obj = await farmObjectService.PlaceAsync(
+                PlayerId,
+                farmId.Value,
+                dto.Type,
+                dto.Transformation);
+
+            await hubContext.Clients
+                .Group(farmId.Value.ToString())
+                .SendAsync("ObjectPlaced", obj);
+
+            return Ok(obj);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
         }
     }
 }

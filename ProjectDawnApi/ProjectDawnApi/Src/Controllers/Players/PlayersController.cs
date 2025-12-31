@@ -1,180 +1,104 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ProjectDawnApi.Src.Services.Player;
 
-namespace ProjectDawnApi.Src.Controllers.Players
+namespace ProjectDawnApi.Src.Controllers.Players;
+
+[ApiController]
+[Route("api/[controller]")]
+public class PlayersController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class PlayersController : ControllerBase
+    private readonly PlayerAuthService authService;
+    private readonly PlayerQueryService queryService;
+
+    public PlayersController(
+        PlayerQueryService queryService,
+        PlayerAuthService authService)
     {
-        private readonly ProjectDawnDbContext context;
+        this.queryService = queryService;
+        this.authService = authService;
+    }
 
-        public PlayersController(ProjectDawnDbContext context)
+    // -----------------------
+    // GET PLAYER
+    // -----------------------
+    [Authorize]
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetPlayer(int id)
+    {
+        var player = await queryService.GetPlayerAsync(id);
+        return player == null ? NotFound() : Ok(player);
+    }
+
+    // -----------------------
+    // GET PLAYERS
+    // -----------------------
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> GetPlayers()
+    {
+        var players = await queryService.GetPlayersAsync();
+        return Ok(players);
+    }
+
+    // -----------------------
+    // LOGIN
+    // -----------------------
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] PlayerDTO dto)
+    {
+        try
         {
-            this.context = context;
+            return Ok(await authService.LoginAsync(dto));
         }
-
-        [Authorize]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetPlayer(int id)
+        catch (UnauthorizedAccessException)
         {
-            var player = await context.Players
-                .Where(p => p.Id == id)
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Name,
-                    p.IsBanned,
-                    p.CreatedAtUtc
-                })
-                .FirstOrDefaultAsync();
-
-            if (player == null)
-                return NotFound();
-
-            return Ok(player);
+            return Unauthorized();
         }
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetPlayers()
+        catch (InvalidOperationException ex) when (ex.Message == "BANNED")
         {
-            var players = await context.Players
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Name
-                })
-                .ToListAsync();
-
-            return Ok(players);
+            return Forbid();
         }
+    }
 
-        [HttpPost("[action]")]
-        public async Task<IActionResult> Login(
-            [FromBody] PlayerDTO dto,
-            [FromServices] IConfiguration config)
+    // -----------------------
+    // REFRESH TOKEN
+    // -----------------------
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenDTO dto)
+    {
+        try
         {
-            var player = await context.Players
-                .Include(p => p.RefreshTokens)
-                .FirstOrDefaultAsync(p => p.Name == dto.Name);
-
-            if (player == null ||
-                !PasswordHasher.Verify(dto.Password, player.PasswordHash))
-                return Unauthorized();
-
-            if (player.IsBanned)
-                return Forbid();
-
-            // 🔐 Create JWT
-            var accessToken = JwtTokenFactory.CreateToken(
-                player.Id,
-                player.Name,
-                config);
-
-            // 🔁 Create refresh token
-            var refreshToken = new RefreshTokenDM
-            {
-                PlayerId = player.Id,
-                Token = RefreshTokenFactory.Generate(),
-                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
-            };
-
-            context.RefreshTokens.Add(refreshToken);
-            await context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                accessToken,
-                refreshToken = refreshToken.Token,
-                player = new
-                {
-                    player.Id,
-                    player.Name
-                }
-            });
+            return Ok(await authService.RefreshAsync(dto.RefreshToken));
         }
-
-        [HttpPost("[action]")]
-        public async Task<IActionResult> Refresh(
-    [FromBody] RefreshTokenDTO dto,
-    [FromServices] IConfiguration config)
+        catch (UnauthorizedAccessException)
         {
-            var storedToken = await context.RefreshTokens
-                .Include(r => r.Player)
-                .FirstOrDefaultAsync(r => r.Token == dto.RefreshToken);
-
-            if (storedToken == null ||
-                storedToken.IsRevoked ||
-                storedToken.ExpiresAtUtc < DateTime.UtcNow)
-                return Unauthorized();
-
-            var player = storedToken.Player;
-
-            if (player.IsBanned)
-                return Forbid();
-
-            // Rotate token (VERY IMPORTANT)
-            storedToken.IsRevoked = true;
-
-            var newRefreshToken = new RefreshTokenDM
-            {
-                PlayerId = player.Id,
-                Token = RefreshTokenFactory.Generate(),
-                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
-            };
-
-            context.RefreshTokens.Add(newRefreshToken);
-
-            var newAccessToken = JwtTokenFactory.CreateToken(
-                player.Id,
-                player.Name,
-                config);
-
-            await context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                accessToken = newAccessToken,
-                refreshToken = newRefreshToken.Token
-            });
+            return Unauthorized();
         }
-
-        [HttpPost("[action]")]
-        public async Task<IActionResult> Register([FromBody] PlayerDTO dto)
+        catch (InvalidOperationException ex) when (ex.Message == "BANNED")
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
-                return BadRequest("Name is required.");
+            return Forbid();
+        }
+    }
 
-            if (string.IsNullOrWhiteSpace(dto.Password))
-                return BadRequest("Password is required.");
-
-            if (dto.Password.Length < 6)
-                return BadRequest("Password must be at least 6 characters.");
-
-            var exists = await context.Players
-                .AnyAsync(p => p.Name == dto.Name);
-
-            if (exists)
-                return Conflict("Player name already exists.");
-
-            var player = new PlayerDM
-            {
-                Name = dto.Name,
-                PasswordHash = PasswordHasher.Hash(dto.Password),
-                IsBanned = false,
-                CreatedAtUtc = DateTime.UtcNow,
-                Inventory = new InventoryDM()
-            };
-
-            context.Players.Add(player);
-            await context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = "Player registered successfully"
-            });
+    // -----------------------
+    // REGISTER
+    // -----------------------
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] PlayerDTO dto)
+    {
+        try
+        {
+            await authService.RegisterAsync(dto);
+            return Ok(new { message = "Player registered successfully" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "DUPLICATE")
+        {
+            return Conflict("Player name already exists.");
         }
     }
 }

@@ -1,13 +1,12 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace ProjectDawnApi
+namespace ProjectDawnApi.Src.Services.Farm
 {
     public class PlayerTransformationService
     {
-        private static readonly TimeSpan SaveInterval = TimeSpan.FromSeconds(60);
         private static readonly Dictionary<int, DateTime> LastSave = new();
-
+        private static readonly TimeSpan SaveInterval = TimeSpan.FromSeconds(60);
         private readonly IServiceScopeFactory scopeFactory;
 
         public PlayerTransformationService(IServiceScopeFactory scopeFactory)
@@ -46,5 +45,4 @@ namespace ProjectDawnApi
             }
         }
     }
-
 }

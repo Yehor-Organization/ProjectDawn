@@ -33,7 +33,6 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ProjectDawnDbContext>();
-    DbInitializer.Initialize(context);
 }
 
 // -------------------- Middleware --------------------

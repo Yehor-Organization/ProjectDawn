@@ -1,103 +1,70 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ProjectDawnApi.Src.Services.Player;
 using System.Security.Claims;
 
 namespace ProjectDawnApi.Src.Controllers.Players;
 
 [Authorize]
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/[controller]")]
 public class InventoryController : ControllerBase
 {
-    private readonly ProjectDawnDbContext context;
     private readonly PlayerInventoryService inventoryService;
 
-    public InventoryController(
-        ProjectDawnDbContext context,
-        PlayerInventoryService inventoryService)
+    public InventoryController(PlayerInventoryService inventoryService)
     {
-        this.context = context;
         this.inventoryService = inventoryService;
     }
 
-    [HttpPost("[action]")]
+    private int PlayerId =>
+        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    // ---------------------------------
+    // ADD ITEM
+    // ---------------------------------
+    [HttpPost("add")]
     public async Task<IActionResult> AddItem([FromBody] AddItemDTO dto)
     {
-        int playerId = int.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!
-        );
-
-        if (string.IsNullOrWhiteSpace(dto.ItemType))
-            return BadRequest("ItemType is required.");
-
-        if (dto.Quantity <= 0)
-            return BadRequest("Quantity must be positive.");
-
-        var inventory = await context.Inventories
-            .Include(i => i.Items)
-            .FirstOrDefaultAsync(i => i.PlayerId == playerId);
-
-        if (inventory == null)
-            return NotFound("Inventory not found.");
-
-        var existingItem = inventory.Items
-            .FirstOrDefault(i => i.ItemType == dto.ItemType);
-
-        if (existingItem != null)
+        try
         {
-            existingItem.Quantity += dto.Quantity;
-        }
-        else
-        {
-            inventory.Items.Add(new InventoryItemDM
-            {
-                ItemType = dto.ItemType,
-                Quantity = dto.Quantity
-            });
-        }
+            await inventoryService.AddItemAsync(
+                PlayerId,
+                dto.ItemType,
+                dto.Quantity);
 
-        await context.SaveChangesAsync();
-
-        await inventoryService.NotifyInventoryUpdatedAsync(
-            playerId,
-            new
+            return Ok(new
             {
                 itemType = dto.ItemType,
-                delta = dto.Quantity
+                quantityAdded = dto.Quantity
             });
-
-        return Ok(new
+        }
+        catch (ArgumentException ex)
         {
-            itemType = dto.ItemType,
-            quantityAdded = dto.Quantity
-        });
+            return BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound("Inventory not found.");
+        }
     }
 
+    // ---------------------------------
+    // GET INVENTORY
+    // ---------------------------------
     [HttpGet]
     public async Task<IActionResult> GetInventory()
     {
-        int playerId = int.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!
-        );
+        try
+        {
+            var inventory = await inventoryService
+                .GetInventoryAsync(PlayerId);
 
-        var inventory = await context.Inventories
-            .Include(i => i.Items)
-            .Where(i => i.PlayerId == playerId)
-            .Select(i => new
-            {
-                i.PlayerId,
-                Items = i.Items.Select(item => new
-                {
-                    item.ItemType,
-                    item.Quantity
-                })
-            })
-            .FirstOrDefaultAsync();
-
-        if (inventory == null)
-            return NotFound();
-
-        return Ok(inventory);
+            return Ok(inventory);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound("Inventory not found.");
+        }
     }
 }

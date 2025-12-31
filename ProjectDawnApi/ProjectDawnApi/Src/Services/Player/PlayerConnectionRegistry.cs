@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace ProjectDawnApi;
+namespace ProjectDawnApi.Src.Services.Player;
 
 public static class PlayerConnectionRegistry
 {

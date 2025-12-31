@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ProjectDawnApi.Src.DataClasses.Visitor;
 
 namespace ProjectDawnApi
 {
@@ -11,17 +12,22 @@ namespace ProjectDawnApi
         public ProjectDawnDbContext(DbContextOptions<ProjectDawnDbContext> options)
             : base(options) { }
 
+        public DbSet<FarmDM> Farms { get; set; }
+
+        public DbSet<VisitorDM> FarmVisitors { get; set; }
+
+        public DbSet<InventoryDM> Inventories { get; set; }
+
+        public DbSet<InventoryItemDM> InventoryItems { get; set; }
+
+        public DbSet<ObjectDM> PlacedObjects { get; set; }
+
         // -----------------------------
         // DbSets (tables)
         // -----------------------------
         public DbSet<PlayerDM> Players { get; set; }
-        public DbSet<FarmDM> Farms { get; set; }
-        public DbSet<PlacedObjectDM> PlacedObjects { get; set; }
-        public DbSet<FarmVisitorDM> FarmVisitors { get; set; }
-        public DbSet<RefreshTokenDM> RefreshTokens { get; set; }
 
-        public DbSet<InventoryDM> Inventories { get; set; }
-        public DbSet<InventoryItemDM> InventoryItems { get; set; }
+        public DbSet<RefreshTokenDM> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,16 +42,16 @@ namespace ProjectDawnApi
             // Farm → Owner (many-to-one)
             // -----------------------------
             modelBuilder.Entity<FarmDM>()
-                .HasOne(f => f.Owner)
-                .WithMany()
-                .HasForeignKey(f => f.OwnerId)
-                .IsRequired();
+                .HasMany(f => f.Owners)
+                .WithMany(p => p.Farms)
+                .UsingEntity(j =>
+                    j.ToTable("FarmOwners"));
 
             // -----------------------------
             // Farm → PlacedObjects (one-to-many)
             // -----------------------------
             modelBuilder.Entity<FarmDM>()
-                .HasMany(f => f.PlacedObjects)
+                .HasMany(f => f.Objects)
                 .WithOne()
                 .HasForeignKey(p => p.FarmId)
                 .IsRequired();
@@ -53,16 +59,16 @@ namespace ProjectDawnApi
             // -----------------------------
             // Farm ↔ Player (many-to-many) via FarmVisitor
             // -----------------------------
-            modelBuilder.Entity<FarmVisitorDM>()
+            modelBuilder.Entity<VisitorDM>()
                 .HasKey(fv => new { fv.FarmId, fv.PlayerId });
 
-            modelBuilder.Entity<FarmVisitorDM>()
+            modelBuilder.Entity<VisitorDM>()
                 .HasOne(fv => fv.Farm)
                 .WithMany(f => f.Visitors)
                 .HasForeignKey(fv => fv.FarmId)
                 .IsRequired();
 
-            modelBuilder.Entity<FarmVisitorDM>()
+            modelBuilder.Entity<VisitorDM>()
                 .HasOne(fv => fv.PlayerDataModel)
                 .WithMany()
                 .HasForeignKey(fv => fv.PlayerId)
@@ -89,10 +95,10 @@ namespace ProjectDawnApi
             // -----------------------------
             // Owned types
             // -----------------------------
-            modelBuilder.Entity<PlacedObjectDM>()
+            modelBuilder.Entity<ObjectDM>()
                 .OwnsOne(p => p.Transformation);
 
-            modelBuilder.Entity<FarmVisitorDM>()
+            modelBuilder.Entity<VisitorDM>()
                 .OwnsOne(v => v.Transformation);
         }
     }

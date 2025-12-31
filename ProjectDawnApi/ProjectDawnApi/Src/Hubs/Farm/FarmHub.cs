@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ProjectDawnApi;
+using ProjectDawnApi.Src.Services.Farm;
 
 public class FarmHub : Hub
 {
-    private readonly FarmSessionService sessions;
     private readonly PlayerTransformationService movement;
     private readonly FarmObjectService objects;
+    private readonly FarmSessionService sessions;
 
     public FarmHub(
         FarmSessionService sessions,
@@ -23,12 +24,9 @@ public class FarmHub : Hub
     public Task LeaveFarm(string farmId, int playerId)
         => sessions.LeaveAsync(this, farmId, playerId);
 
-    public Task PlaceObject(string farmId, int playerId, string type, TransformationDM transform)
-        => objects.PlaceAsync(this, farmId, playerId, type, transform);
+    public override Task OnDisconnectedAsync(Exception ex)
+        => sessions.HandleDisconnectAsync(this, ex);
 
     public Task UpdatePlayerTransformation(string farmId, int playerId, TransformationDM transform)
         => movement.UpdateAsync(this, farmId, playerId, transform);
-
-    public override Task OnDisconnectedAsync(Exception ex)
-        => sessions.HandleDisconnectAsync(this, ex);
 }
