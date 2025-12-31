@@ -10,7 +10,7 @@ builder.Services.AddSwaggerGen();
 
 // -------------------- Database --------------------
 builder.Services.AddDbContext<ProjectDawnDbContext>(options =>
-    options.UseInMemoryDatabase("ProjectDawn_InMemoryDb"));
+    options.UseSqlite("Data Source=projectdawn.db"));
 
 // -------------------- SignalR --------------------
 builder.Services.AddSignalR()

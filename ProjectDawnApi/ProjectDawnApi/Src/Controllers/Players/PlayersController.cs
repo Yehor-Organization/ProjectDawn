@@ -14,8 +14,8 @@ namespace ProjectDawnApi.Src.Controllers.Players
             this.context = context;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> RegisterPlayer([FromBody] PlayerDTO dto)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Register([FromBody] PlayerDTO dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Name))
                 return BadRequest("Name is required.");
@@ -26,51 +26,32 @@ namespace ProjectDawnApi.Src.Controllers.Players
             if (dto.Password.Length < 6)
                 return BadRequest("Password must be at least 6 characters.");
 
-            // Prevent duplicate player names
             var exists = await context.Players
                 .AnyAsync(p => p.Name == dto.Name);
 
             if (exists)
                 return Conflict("Player name already exists.");
 
-            // 🔐 Hash password
-            var passwordHash = PasswordHasher.Hash(dto.Password);
-
-            // 🧍 Create player
             var player = new PlayerDM
             {
                 Name = dto.Name,
-                PasswordHash = passwordHash,
+                PasswordHash = PasswordHasher.Hash(dto.Password),
                 IsBanned = false,
-                CreatedAtUtc = DateTime.UtcNow
+                CreatedAtUtc = DateTime.UtcNow,
+                Inventory = new InventoryDM()
             };
-
-            // 🎒 Create inventory (1:1)
-            var inventory = new InventoryDM
-            {
-                Player = player
-            };
-
-            player.Inventory = inventory;
 
             context.Players.Add(player);
             await context.SaveChangesAsync();
 
-            // ✅ Return ONLY player info
-            return CreatedAtAction(
-                nameof(GetPlayer),
-                new { id = player.Id },
-                new
-                {
-                    player.Id,
-                    player.Name,
-                    player.CreatedAtUtc
-                }
-            );
+            return Ok(new
+            {
+                message = "Player registered successfully"
+            });
         }
 
 
-        [HttpPost("login")]
+        [HttpPost("[action]")]
         public async Task<IActionResult> Login(
             [FromBody] PlayerDTO dto,
             [FromServices] IConfiguration config)
@@ -115,7 +96,7 @@ namespace ProjectDawnApi.Src.Controllers.Players
             });
         }
 
-        [HttpPost("Refresh")]
+        [HttpPost("[action]")]
         public async Task<IActionResult> Refresh(
     [FromBody] RefreshTokenDTO dto,
     [FromServices] IConfiguration config)

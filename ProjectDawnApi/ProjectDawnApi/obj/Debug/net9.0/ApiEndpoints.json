@@ -54,7 +54,7 @@
   {
     "ContainingType": "ProjectDawnApi.Src.Controllers.Players.InventoryController",
     "Method": "AddItem",
-    "RelativePath": "api/Inventory/{playerId}/add",
+    "RelativePath": "api/Inventory/{playerId}/AddItem",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -116,7 +116,23 @@
   },
   {
     "ContainingType": "ProjectDawnApi.Src.Controllers.Players.PlayersController",
-    "Method": "RegisterPlayer",
+    "Method": "Refresh",
+    "RelativePath": "api/Players/Refresh",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "ProjectDawnApi.RefreshTokenDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Players.PlayersController",
+    "Method": "Register",
     "RelativePath": "api/Players/Register",
     "HttpMethod": "POST",
     "IsController": true,

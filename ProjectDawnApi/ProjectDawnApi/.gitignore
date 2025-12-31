@@ -369,3 +369,13 @@ test:.cs
 *.tempLog.xml
 *.testResults.xml
 *.testStats.csv
+
+# -----------------------------
+# EF Core / SQLite (local dev)
+# -----------------------------
+*.db
+*.db-shm
+*.db-wal
+
+# Optional: EF Core local tooling artifacts
+**/.ef/

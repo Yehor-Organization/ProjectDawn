@@ -40,7 +40,7 @@ public class InventoryController : ControllerBase
         return Ok(inventory);
     }
 
-    [HttpPost("{playerId}/Add")]
+    [HttpPost("{playerId}/[action]")]
     public async Task<IActionResult> AddItem(
     int playerId,
     [FromBody] AddItemDTO dto)
