@@ -9,6 +9,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PlayerTransformationService>();
         services.AddScoped<FarmObjectService>();
         services.AddScoped<FarmSessionDBCommunicator>();
+        services.AddScoped<PlayerInventoryDBCommunicator>();
+        services.AddScoped<PlayerInventoryService>();
 
         return services;
     }

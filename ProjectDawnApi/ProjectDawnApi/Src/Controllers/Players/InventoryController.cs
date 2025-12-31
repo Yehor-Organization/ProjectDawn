@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ProjectDawnApi.Src.Controllers.Players;
+
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
@@ -19,9 +21,66 @@ public class InventoryController : ControllerBase
         this.inventoryService = inventoryService;
     }
 
-    [HttpGet("{playerId}")]
-    public async Task<IActionResult> GetInventory(int playerId)
+    [HttpPost("[action]")]
+    public async Task<IActionResult> AddItem([FromBody] AddItemDTO dto)
     {
+        int playerId = int.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!
+        );
+
+        if (string.IsNullOrWhiteSpace(dto.ItemType))
+            return BadRequest("ItemType is required.");
+
+        if (dto.Quantity <= 0)
+            return BadRequest("Quantity must be positive.");
+
+        var inventory = await context.Inventories
+            .Include(i => i.Items)
+            .FirstOrDefaultAsync(i => i.PlayerId == playerId);
+
+        if (inventory == null)
+            return NotFound("Inventory not found.");
+
+        var existingItem = inventory.Items
+            .FirstOrDefault(i => i.ItemType == dto.ItemType);
+
+        if (existingItem != null)
+        {
+            existingItem.Quantity += dto.Quantity;
+        }
+        else
+        {
+            inventory.Items.Add(new InventoryItemDM
+            {
+                ItemType = dto.ItemType,
+                Quantity = dto.Quantity
+            });
+        }
+
+        await context.SaveChangesAsync();
+
+        await inventoryService.NotifyInventoryUpdatedAsync(
+            playerId,
+            new
+            {
+                itemType = dto.ItemType,
+                delta = dto.Quantity
+            });
+
+        return Ok(new
+        {
+            itemType = dto.ItemType,
+            quantityAdded = dto.Quantity
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetInventory()
+    {
+        int playerId = int.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!
+        );
+
         var inventory = await context.Inventories
             .Include(i => i.Items)
             .Where(i => i.PlayerId == playerId)
@@ -40,60 +99,5 @@ public class InventoryController : ControllerBase
             return NotFound();
 
         return Ok(inventory);
-    }
-
-    [HttpPost("{playerId}/[action]")]
-    public async Task<IActionResult> AddItem(
-    int playerId,
-    [FromBody] AddItemDTO dto)
-    {
-        if (string.IsNullOrWhiteSpace(dto.ItemType))
-            return BadRequest("ItemType is required.");
-
-        if (dto.Quantity <= 0)
-            return BadRequest("Quantity must be positive.");
-
-        var inventory = await context.Inventories
-            .Include(i => i.Items)
-            .FirstOrDefaultAsync(i => i.PlayerId == playerId);
-
-        if (inventory == null)
-            return NotFound("Inventory not found.");
-
-        // Merge stacks
-        var existingItem = inventory.Items
-            .FirstOrDefault(i => i.ItemType == dto.ItemType);
-
-        if (existingItem != null)
-        {
-            existingItem.Quantity += dto.Quantity;
-        }
-        else
-        {
-            inventory.Items.Add(new InventoryItemDM
-            {
-                ItemType = dto.ItemType,
-                Quantity = dto.Quantity
-            });
-        }
-
-        // ✅ Commit authoritative state
-        await context.SaveChangesAsync();
-
-        // 🔔 REAL-TIME UPDATE VIA PLAYER HUB
-        await inventoryService.NotifyInventoryUpdatedAsync(
-            playerId,
-            new
-            {
-                itemType = dto.ItemType,
-                delta = dto.Quantity
-            });
-
-        return Ok(new
-        {
-            playerId,
-            itemType = dto.ItemType,
-            quantityAdded = dto.Quantity
-        });
     }
 }

@@ -14,9 +14,8 @@ public static class JwtTokenFactory
     {
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, playerId.ToString()),
-            new Claim("playerId", playerId.ToString()),
-            new Claim("name", playerName),
+            new Claim(ClaimTypes.NameIdentifier, playerId.ToString()),
+            new Claim(ClaimTypes.Name, playerName),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

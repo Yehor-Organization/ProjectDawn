@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace ProjectDawnApi.Src.Controllers.Farms
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class FarmsController : ControllerBase
@@ -15,29 +17,6 @@ namespace ProjectDawnApi.Src.Controllers.Farms
         public FarmsController(ProjectDawnDbContext context)
         {
             this.context = context;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetFarms()
-        {
-            var farms = await context.Farms
-                .Include(f => f.Owner)
-                .Include(f => f.Visitors)
-                    .ThenInclude(v => v.PlayerDataModel) // 👈 include the right nav property
-                .Select(f => new
-                {
-                    id = f.Id,
-                    name = f.Name,
-                    ownerName = f.Owner != null ? f.Owner.Name : "N/A",
-                    visitors = f.Visitors.Select(v => new VisitorSummaryDM
-                    {
-                        playerId = v.PlayerId,
-                        playerName = v.PlayerDataModel != null ? v.PlayerDataModel.Name : "Unknown"
-                    }).ToList()
-                })
-                .ToListAsync();
-
-            return Ok(farms);
         }
 
         [HttpGet("{id}")]
@@ -55,7 +34,7 @@ namespace ProjectDawnApi.Src.Controllers.Farms
                     f.Id,
                     f.Name,
                     OwnerName = f.Owner != null ? f.Owner.Name : "N/A",
-                   PlacedObjects = f.PlacedObjects.Select(po => new
+                    PlacedObjects = f.PlacedObjects.Select(po => new
                     {
                         id = po.Id,   // 👈 now a Guid
                         po.Type,
@@ -89,6 +68,29 @@ namespace ProjectDawnApi.Src.Controllers.Farms
             if (farm == null) return NotFound();
 
             return Ok(farm);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<object>>> GetFarms()
+        {
+            var farms = await context.Farms
+                .Include(f => f.Owner)
+                .Include(f => f.Visitors)
+                    .ThenInclude(v => v.PlayerDataModel) // 👈 include the right nav property
+                .Select(f => new
+                {
+                    id = f.Id,
+                    name = f.Name,
+                    ownerName = f.Owner != null ? f.Owner.Name : "N/A",
+                    visitors = f.Visitors.Select(v => new VisitorSummaryDM
+                    {
+                        playerId = v.PlayerId,
+                        playerName = v.PlayerDataModel != null ? v.PlayerDataModel.Name : "Unknown"
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(farms);
         }
     }
 }

@@ -6,6 +6,7 @@ public static class EndpointRouteBuilderExtensions
         this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapHub<FarmHub>("/farmHub");
+        endpoints.MapHub<PlayerHub>("/playerHub");
 
         return endpoints;
     }

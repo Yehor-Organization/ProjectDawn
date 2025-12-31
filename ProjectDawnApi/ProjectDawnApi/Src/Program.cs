@@ -6,7 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 // -------------------- Core --------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Swagger (with JWT support)
+builder.Services.AddProjectDawnSwagger();
 
 // -------------------- Database --------------------
 builder.Services.AddDbContext<ProjectDawnDbContext>(options =>

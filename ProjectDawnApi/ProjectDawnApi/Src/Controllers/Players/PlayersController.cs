@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ProjectDawnApi.Src.Controllers.Players
@@ -14,42 +15,41 @@ namespace ProjectDawnApi.Src.Controllers.Players
             this.context = context;
         }
 
-        [HttpPost("[action]")]
-        public async Task<IActionResult> Register([FromBody] PlayerDTO dto)
+        [Authorize]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetPlayer(int id)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
-                return BadRequest("Name is required.");
+            var player = await context.Players
+                .Where(p => p.Id == id)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Name,
+                    p.IsBanned,
+                    p.CreatedAtUtc
+                })
+                .FirstOrDefaultAsync();
 
-            if (string.IsNullOrWhiteSpace(dto.Password))
-                return BadRequest("Password is required.");
+            if (player == null)
+                return NotFound();
 
-            if (dto.Password.Length < 6)
-                return BadRequest("Password must be at least 6 characters.");
-
-            var exists = await context.Players
-                .AnyAsync(p => p.Name == dto.Name);
-
-            if (exists)
-                return Conflict("Player name already exists.");
-
-            var player = new PlayerDM
-            {
-                Name = dto.Name,
-                PasswordHash = PasswordHasher.Hash(dto.Password),
-                IsBanned = false,
-                CreatedAtUtc = DateTime.UtcNow,
-                Inventory = new InventoryDM()
-            };
-
-            context.Players.Add(player);
-            await context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = "Player registered successfully"
-            });
+            return Ok(player);
         }
 
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetPlayers()
+        {
+            var players = await context.Players
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Name
+                })
+                .ToListAsync();
+
+            return Ok(players);
+        }
 
         [HttpPost("[action]")]
         public async Task<IActionResult> Login(
@@ -141,40 +141,40 @@ namespace ProjectDawnApi.Src.Controllers.Players
             });
         }
 
-
-        [HttpGet]
-        public async Task<IActionResult> GetPlayers()
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Register([FromBody] PlayerDTO dto)
         {
-            var players = await context.Players
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Name
-                })
-                .ToListAsync();
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                return BadRequest("Name is required.");
 
-            return Ok(players);
-        }
+            if (string.IsNullOrWhiteSpace(dto.Password))
+                return BadRequest("Password is required.");
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetPlayer(int id)
-        {
-            var player = await context.Players
-                .Where(p => p.Id == id)
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Name,
-                    p.IsBanned,
-                    p.CreatedAtUtc
-                })
-                .FirstOrDefaultAsync();
+            if (dto.Password.Length < 6)
+                return BadRequest("Password must be at least 6 characters.");
 
-            if (player == null)
-                return NotFound();
+            var exists = await context.Players
+                .AnyAsync(p => p.Name == dto.Name);
 
-            return Ok(player);
+            if (exists)
+                return Conflict("Player name already exists.");
+
+            var player = new PlayerDM
+            {
+                Name = dto.Name,
+                PasswordHash = PasswordHasher.Hash(dto.Password),
+                IsBanned = false,
+                CreatedAtUtc = DateTime.UtcNow,
+                Inventory = new InventoryDM()
+            };
+
+            context.Players.Add(player);
+            await context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Player registered successfully"
+            });
         }
     }
-
 }

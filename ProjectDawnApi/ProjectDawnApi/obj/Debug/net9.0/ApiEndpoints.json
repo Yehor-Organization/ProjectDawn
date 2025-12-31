@@ -38,32 +38,21 @@
   {
     "ContainingType": "ProjectDawnApi.Src.Controllers.Players.InventoryController",
     "Method": "GetInventory",
-    "RelativePath": "api/Inventory/{playerId}",
+    "RelativePath": "api/Inventory",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [
-      {
-        "Name": "playerId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
     "ContainingType": "ProjectDawnApi.Src.Controllers.Players.InventoryController",
     "Method": "AddItem",
-    "RelativePath": "api/Inventory/{playerId}/AddItem",
+    "RelativePath": "api/Inventory/AddItem",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
-      {
-        "Name": "playerId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
       {
         "Name": "dto",
         "Type": "ProjectDawnApi.AddItemDTO",
