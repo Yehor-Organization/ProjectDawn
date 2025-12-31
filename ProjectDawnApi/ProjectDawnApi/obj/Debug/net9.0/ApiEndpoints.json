@@ -1,16 +1,26 @@
 [
   {
-    "ContainingType": "ProjectDawnApi.FarmsController",
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Farms.FarmsController",
     "Method": "GetFarms",
     "RelativePath": "api/Farms",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[System.Object, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
-    "ContainingType": "ProjectDawnApi.FarmsController",
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Farms.FarmsController",
     "Method": "GetFarm",
     "RelativePath": "api/Farms/{id}",
     "HttpMethod": "GET",
@@ -26,7 +36,44 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "ProjectDawnApi.PlayersController",
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Players.InventoryController",
+    "Method": "GetInventory",
+    "RelativePath": "api/inventory/{playerId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "playerId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Players.InventoryController",
+    "Method": "AddItem",
+    "RelativePath": "api/inventory/{playerId}/add",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "playerId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "ProjectDawnApi.AddItemDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Players.PlayersController",
     "Method": "GetPlayers",
     "RelativePath": "api/Players",
     "HttpMethod": "GET",

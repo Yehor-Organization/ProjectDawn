@@ -8,13 +8,19 @@ namespace ProjectDawnApi
     /// </summary>
     public class ProjectDawnDbContext : DbContext
     {
-        public ProjectDawnDbContext(DbContextOptions<ProjectDawnDbContext> options) : base(options) { }
+        public ProjectDawnDbContext(DbContextOptions<ProjectDawnDbContext> options)
+            : base(options) { }
 
-        // Define the database tables (DbSets)
-        public DbSet<PlayerDataModel> Players { get; set; }
-        public DbSet<FarmDataModel> Farms { get; set; }
-        public DbSet<PlacedObjectDataModel> PlacedObjects { get; set; }
-        public DbSet<FarmVisitorDataModel> FarmVisitors { get; set; }
+        // -----------------------------
+        // DbSets (tables)
+        // -----------------------------
+        public DbSet<PlayerDM> Players { get; set; }
+        public DbSet<FarmDM> Farms { get; set; }
+        public DbSet<PlacedObjectDM> PlacedObjects { get; set; }
+        public DbSet<FarmVisitorDM> FarmVisitors { get; set; }
+
+        public DbSet<InventoryDM> Inventories { get; set; }
+        public DbSet<InventoryItemDM> InventoryItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,7 +29,7 @@ namespace ProjectDawnApi
             // -----------------------------
             // Farm → Owner (many-to-one)
             // -----------------------------
-            modelBuilder.Entity<FarmDataModel>()
+            modelBuilder.Entity<FarmDM>()
                 .HasOne(f => f.Owner)
                 .WithMany()
                 .HasForeignKey(f => f.OwnerId)
@@ -32,35 +38,55 @@ namespace ProjectDawnApi
             // -----------------------------
             // Farm → PlacedObjects (one-to-many)
             // -----------------------------
-            modelBuilder.Entity<FarmDataModel>()
+            modelBuilder.Entity<FarmDM>()
                 .HasMany(f => f.PlacedObjects)
                 .WithOne()
                 .HasForeignKey(p => p.FarmId)
                 .IsRequired();
 
             // -----------------------------
-            // Farm ↔ Player (many-to-many) via FarmVisitorDataModel
+            // Farm ↔ Player (many-to-many) via FarmVisitor
             // -----------------------------
-            modelBuilder.Entity<FarmVisitorDataModel>()
+            modelBuilder.Entity<FarmVisitorDM>()
                 .HasKey(fv => new { fv.FarmId, fv.PlayerId });
 
-            modelBuilder.Entity<FarmVisitorDataModel>()
+            modelBuilder.Entity<FarmVisitorDM>()
                 .HasOne(fv => fv.Farm)
                 .WithMany(f => f.Visitors)
-                .HasForeignKey(fv => fv.FarmId);
+                .HasForeignKey(fv => fv.FarmId)
+                .IsRequired();
 
-            modelBuilder.Entity<FarmVisitorDataModel>()
+            modelBuilder.Entity<FarmVisitorDM>()
                 .HasOne(fv => fv.PlayerDataModel)
                 .WithMany()
-                .HasForeignKey(fv => fv.PlayerId);
+                .HasForeignKey(fv => fv.PlayerId)
+                .IsRequired();
+
+            // -----------------------------
+            // Player → Inventory (one-to-one)
+            // -----------------------------
+            modelBuilder.Entity<PlayerDM>()
+                .HasOne(p => p.Inventory)
+                .WithOne(i => i.Player)
+                .HasForeignKey<InventoryDM>(i => i.PlayerId)
+                .IsRequired();
+
+            // -----------------------------
+            // Inventory → InventoryItems (one-to-many)
+            // -----------------------------
+            modelBuilder.Entity<InventoryItemDM>()
+                .HasOne(ii => ii.Inventory)
+                .WithMany(inv => inv.Items)
+                .HasForeignKey(ii => ii.InventoryId)
+                .IsRequired();
 
             // -----------------------------
             // Owned types
             // -----------------------------
-            modelBuilder.Entity<PlacedObjectDataModel>()
+            modelBuilder.Entity<PlacedObjectDM>()
                 .OwnsOne(p => p.Transformation);
 
-            modelBuilder.Entity<FarmVisitorDataModel>()
+            modelBuilder.Entity<FarmVisitorDM>()
                 .OwnsOne(v => v.Transformation);
         }
     }

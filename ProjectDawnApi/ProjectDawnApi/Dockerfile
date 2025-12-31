@@ -3,7 +3,8 @@ WORKDIR /app
 EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-ARG BUILD_CONFIGURATION=Release
+ARG BUILD
+CONFIGURATION=Release
 WORKDIR /src
 
 # copy csproj first (for caching restore)
