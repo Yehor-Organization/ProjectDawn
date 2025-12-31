@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 
 namespace ProjectDawnApi.Src.Controllers.Players;
-[Route("api/inventory")]
+[Route("api/[controller]")]
 [ApiController]
 public class InventoryController : ControllerBase
 {
@@ -40,7 +40,7 @@ public class InventoryController : ControllerBase
         return Ok(inventory);
     }
 
-    [HttpPost("{playerId}/add")]
+    [HttpPost("{playerId}/Add")]
     public async Task<IActionResult> AddItem(
     int playerId,
     [FromBody] AddItemDTO dto)

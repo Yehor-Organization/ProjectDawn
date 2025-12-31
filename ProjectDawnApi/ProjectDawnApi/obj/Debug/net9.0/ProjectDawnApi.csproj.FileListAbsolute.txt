@@ -392,3 +392,9 @@ D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\obj\Debug\net9.0\refint\Proj
 D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\obj\Debug\net9.0\ProjectDawnApi.pdb
 D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\obj\Debug\net9.0\ProjectDawnApi.genruntimeconfig.cache
 D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\obj\Debug\net9.0\ref\ProjectDawnApi.dll
+D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\bin\Debug\net9.0\BCrypt.Net-Next.dll
+D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\bin\Debug\net9.0\Microsoft.IdentityModel.Abstractions.dll
+D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\bin\Debug\net9.0\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\bin\Debug\net9.0\Microsoft.IdentityModel.Logging.dll
+D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
+D:\GitHub\ProjectDawn\ProjectDawnApi\ProjectDawnApi\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll

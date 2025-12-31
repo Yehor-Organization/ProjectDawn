@@ -38,7 +38,7 @@
   {
     "ContainingType": "ProjectDawnApi.Src.Controllers.Players.InventoryController",
     "Method": "GetInventory",
-    "RelativePath": "api/inventory/{playerId}",
+    "RelativePath": "api/Inventory/{playerId}",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -54,7 +54,7 @@
   {
     "ContainingType": "ProjectDawnApi.Src.Controllers.Players.InventoryController",
     "Method": "AddItem",
-    "RelativePath": "api/inventory/{playerId}/add",
+    "RelativePath": "api/Inventory/{playerId}/add",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -80,6 +80,54 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Players.PlayersController",
+    "Method": "GetPlayer",
+    "RelativePath": "api/Players/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Players.PlayersController",
+    "Method": "Login",
+    "RelativePath": "api/Players/Login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "ProjectDawnApi.PlayerDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ProjectDawnApi.Src.Controllers.Players.PlayersController",
+    "Method": "RegisterPlayer",
+    "RelativePath": "api/Players/Register",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "ProjectDawnApi.PlayerDTO",
+        "IsRequired": true
+      }
+    ],
     "ReturnTypes": []
   }
 ]

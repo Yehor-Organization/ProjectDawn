@@ -21,6 +21,7 @@ public class PlayerDM
 
     [Required]
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public ICollection<RefreshTokenDM> RefreshTokens { get; set; } = new List<RefreshTokenDM>();
 
     public InventoryDM Inventory { get; set; } = null!;
 }

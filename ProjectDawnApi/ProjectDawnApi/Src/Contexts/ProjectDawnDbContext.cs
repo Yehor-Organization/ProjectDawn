@@ -18,6 +18,7 @@ namespace ProjectDawnApi
         public DbSet<FarmDM> Farms { get; set; }
         public DbSet<PlacedObjectDM> PlacedObjects { get; set; }
         public DbSet<FarmVisitorDM> FarmVisitors { get; set; }
+        public DbSet<RefreshTokenDM> RefreshTokens { get; set; }
 
         public DbSet<InventoryDM> Inventories { get; set; }
         public DbSet<InventoryItemDM> InventoryItems { get; set; }
@@ -25,6 +26,11 @@ namespace ProjectDawnApi
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<RefreshTokenDM>()
+                .HasOne(r => r.Player)
+                .WithMany(p => p.RefreshTokens)
+                .HasForeignKey(r => r.PlayerId);
 
             // -----------------------------
             // Farm → Owner (many-to-one)
