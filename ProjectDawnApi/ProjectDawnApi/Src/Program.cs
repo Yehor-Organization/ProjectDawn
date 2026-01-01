@@ -1,8 +1,16 @@
+using DotNetEnv;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using ProjectDawnApi;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Console.WriteLine("SDYGDYGW " + builder.Environment.IsDevelopment());
+if (builder.Environment.IsDevelopment())
+{
+    var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
+    Env.Load(envPath);
+}
 
 // ==================================================
 // Core
@@ -110,12 +118,6 @@ if (enableSwagger)
 
     app.UseSwaggerBasicAuth();
     app.UseSwaggerUI();
-}
-
-// HTTPS breaks in containers unless explicitly configured
-if (!Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")?.Equals("true") ?? true)
-{
-    app.UseHttpsRedirection();
 }
 
 app.UseAuthentication();
