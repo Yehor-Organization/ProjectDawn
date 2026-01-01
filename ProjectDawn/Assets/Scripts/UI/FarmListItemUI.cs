@@ -13,7 +13,7 @@ public class FarmListItemUI : MonoBehaviour
     private GameManager gameManager;
     private FarmListUI farmListUI; // ✅ reference to parent
 
-    public void Setup(FarmInfoDC farm, GameManager gm, FarmListUI parentUI)
+    public void Setup(FarmInfoDM farm, GameManager gm, FarmListUI parentUI)
     {
         farmId = farm.id.ToString();
         gameManager = gm;

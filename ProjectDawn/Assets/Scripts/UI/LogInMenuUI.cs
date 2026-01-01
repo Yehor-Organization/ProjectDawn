@@ -4,28 +4,20 @@ using UnityEngine.UI;
 
 public class LogInMenuUI : MonoBehaviour
 {
-    [Header("UI References")]
-    public TMP_Text title;
     public GameObject confirmPassword;
+
     public TMP_Text loginButtonText;
-    public TMP_Text switchText;
-    public TMP_Text switchButtonText;
+
     public Button switchButton;
 
+    public TMP_Text switchButtonText;
+
+    public TMP_Text switchText;
+
+    [Header("UI References")]
+    public TMP_Text title;
+
     private bool isRegister = false;
-
-    private void Awake()
-    {
-        // Ensure initial state is Login
-        ApplyState();
-        switchButton.onClick.AddListener(ToggleMode);
-    }
-
-    private void ToggleMode()
-    {
-        isRegister = !isRegister;
-        ApplyState();
-    }
 
     private void ApplyState()
     {
@@ -47,5 +39,18 @@ public class LogInMenuUI : MonoBehaviour
         switchButtonText.text = isRegister
             ? "Login"
             : "Register";
+    }
+
+    private void Awake()
+    {
+        // Ensure initial state is Login
+        ApplyState();
+        switchButton.onClick.AddListener(ToggleMode);
+    }
+
+    private void ToggleMode()
+    {
+        isRegister = !isRegister;
+        ApplyState();
     }
 }

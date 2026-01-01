@@ -1,38 +1,24 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Networking;
-using Newtonsoft.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 public class FarmListUI : MonoBehaviour
 {
-    [SerializeField] private GameManager gameManager;
+    // 🔗 Dependencies
+    private FarmAPICommunicator farmApi;
+
+    [Header("UI")]
     [SerializeField] private RectTransform farmListContainer;
+
     [SerializeField] private GameObject farmListItemPrefab;
+    private GameManager gameManager;
     [SerializeField] private GameObject inGameUI;
-    [SerializeField] private float refreshPeroid = 1f;
 
-    void Start()
-    {
-        inGameUI.SetActive(false);
-    }
+    [Header("Settings")]
+    [SerializeField] private float refreshPeriod = 1f;
 
-    void OnEnable()
-    {
-        Debug.Log("[DEBUG][FarmListUI] OnEnable → starting periodic farm fetch...");
-        StartCoroutine(FetchFarmsPeriodically(refreshPeroid));
-    }
-
-    private IEnumerator FetchFarmsPeriodically(float interval)
-    {
-        while (true)
-        {
-            yield return PopulateFarmListAsync(); 
-            yield return new WaitForSeconds(interval); 
-        }
-    }
-
+    private CancellationTokenSource refreshToken;
 
     public void FarmJoined()
     {
@@ -40,27 +26,70 @@ public class FarmListUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    private void Awake()
+    {
+        var core = Core.Instance;
+
+        farmApi = core.ApiCommunicators.FarmApi;
+        gameManager = core.Managers.GameManager;
+
+        if (farmApi == null)
+            Debug.LogError("[FarmListUI] FarmApiCommunicator missing");
+
+        if (gameManager == null)
+            Debug.LogError("[FarmListUI] GameManager missing");
+    }
+
+    private void OnDisable()
+    {
+        refreshToken?.Cancel();
+        refreshToken = null;
+    }
+
+    private void OnEnable()
+    {
+        inGameUI.SetActive(false);
+        refreshToken = new CancellationTokenSource();
+        _ = RefreshLoopAsync(refreshToken.Token);
+    }
+
+    // -----------------------
+    // ASYNC LOOP (SAFE)
+    // -----------------------
+
+    // -----------------------
+    // UI LOGIC
+    // -----------------------
     private async Task PopulateFarmListAsync()
     {
-        List<FarmInfoDC> farms = await ProjectDawnApi.Instance.GetAllFarms();
+        var farms = await farmApi.GetAllFarms();
+        if (farms == null) return;
 
-        Debug.Log("[DEBUG][FarmListUI] Clearing old farm list items...");
+        // Clear existing items
         foreach (Transform child in farmListContainer)
             Destroy(child.gameObject);
 
-        Debug.Log($"[DEBUG][FarmListUI] Populating UI with {farms.Count} farms...");
         foreach (var farm in farms)
         {
-            int visitors = (farm.visitors != null) ? farm.visitors.Count : 0;
-            Debug.Log($"[DEBUG][FarmListUI] Creating item for farmId={farm.id}, name={farm.name}, owner={farm.ownerName}, visitors={visitors}");
-
             var item = Instantiate(farmListItemPrefab, farmListContainer);
             var farmItemUI = item.GetComponent<FarmListItemUI>();
-            farmItemUI.Setup(farm, gameManager, this);
-        }
 
-        Debug.Log("[DEBUG][FarmListUI] Farm list UI updated successfully.");
+            if (farmItemUI != null)
+                farmItemUI.Setup(farm, gameManager, this);
+        }
     }
 
+    private async Task RefreshLoopAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await PopulateFarmListAsync();
 
+            try
+            {
+                await Task.Delay((int)(refreshPeriod * 1000), token);
+            }
+            catch (TaskCanceledException) { }
+        }
+    }
 }

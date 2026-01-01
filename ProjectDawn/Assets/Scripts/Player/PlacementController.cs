@@ -1,223 +1,44 @@
 ﻿using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlacementController : MonoBehaviour
 {
+    // 🔗 Dependencies
+    private CameraManager cameraManager;
+
+    private ObjectManager objectManager;
+
     [Header("Placement Settings")]
     [SerializeField] private string objectTypeToPlace = "Tree";
 
-    [Tooltip("Maximum distance from player at which objects can be placed.")]
+    private ObjectPlacementCommunicator placementCommunicator;
     [SerializeField] private float placementRadius = 5f;
-
     [SerializeField] private float playerMaskRadius = 0f;
-
     private GameObject previewInstance;
-    private bool previewValid = false; // ✅ track if preview is valid
-    private int nextObjectId = 1000;
+    private bool previewValid;
 
-    void Update()
+    private void Awake()
     {
-        Vector2? inputPos = null;
+        var core = Core.Instance;
 
-        if (Mouse.current != null)
-            inputPos = Mouse.current.position.ReadValue();
-        else if (Touchscreen.current != null)
-            inputPos = Touchscreen.current.primaryTouch.position.ReadValue();
+        cameraManager = core.Managers.CameraManager;
+        objectManager = core.Managers.ObjectManager;
+        placementCommunicator = core.ApiCommunicators.ObjectPlacement;
 
-        if (inputPos.HasValue)
-        {
-            UpdatePreview(inputPos.Value);
+        if (cameraManager == null)
+            Debug.LogError("[PlacementController] CameraManager missing");
 
-            if ((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) ||
-                (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame))
-            {
-                TryPlaceAtPreview();
-            }
-        }
-    }
+        if (objectManager == null)
+            Debug.LogError("[PlacementController] ObjectManager missing");
 
-    // ---------------- PREVIEW ----------------
-private void UpdatePreview(Vector2 screenPosition)
-{
-    Ray ray = CameraManager.Instance.GetCamera().ScreenPointToRay(screenPosition);
-
-    if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity))
-    {
-        // Create preview if it doesn’t exist
-        if (previewInstance == null)
-        {
-            GameObject prefab = ObjectManager.Instance.GetPrefab(objectTypeToPlace);
-            if (prefab != null)
-            {
-                previewInstance = Instantiate(prefab);
-                MakeTransparent(previewInstance, 0.5f);
-                DisablePhysics(previewInstance);
-            }
-        }
-
-        if (previewInstance != null)
-        {
-            previewInstance.transform.position = hit.point;
-            previewInstance.SetActive(true);
-
-            // Check if hit is terrain
-            Terrain terrain = hit.collider.GetComponent<Terrain>();
-
-            if (terrain != null && hit.collider is TerrainCollider)
-            {
-                // ✅ Valid placement checks only on terrain
-                float distance = Vector3.Distance(transform.position, hit.point);
-                bool tooFar = distance > placementRadius;
-                bool tooCloseToPlayer = distance < playerMaskRadius;
-                bool blocked = IsPlacementBlocked(previewInstance, terrain, 2f);
-
-                previewValid = !(tooFar || tooCloseToPlayer || blocked);
-
-                SetPreviewColor(previewInstance, previewValid
-                    ? new Color(0f, 1f, 0f, 0.5f)  // green
-                    : new Color(1f, 0f, 0f, 0.5f)  // red
-                );
-            }
-            else
-            {
-                // ❌ Not terrain → always invalid (red)
-                previewValid = false;
-                SetPreviewColor(previewInstance, new Color(1f, 0f, 0f, 0.5f));
-            }
-        }
-    }
-    else if (previewInstance != null)
-    {
-        previewInstance.SetActive(false);
-        previewValid = false;
-    }
-}
-
-
-    // ---------------- FINAL PLACEMENT ----------------
-    private async void TryPlaceAtPreview()
-    {
-        if (previewInstance != null && previewValid)
-        {
-            var transformData = TransformationDC.FromPosition(previewInstance.transform.position);
-            string typeKey = objectTypeToPlace;
-
-            // 1. Spawn immediately (local feedback)
-            ObjectManager.Instance.PlaceObject(Guid.NewGuid(), typeKey, transformData);
-
-            // 2. Notify server (so others see it too)
-            await ProjectDawnApi.Instance.SendObjectPlacement(typeKey, transformData);
-
-            // Reset preview
-            previewInstance.SetActive(false);
-            previewValid = false;
-        }
-        else
-        {
-            Debug.LogWarning("[PlacementController] Tried to place, but preview was invalid!");
-        }
-    }
-
-    // ---------------- HELPERS ----------------
-    private bool IsPlacementBlocked(GameObject preview, Terrain terrain, float treeMinDistance = 2f)
-    {
-        if (preview != null)
-        {
-            foreach (var renderer in preview.GetComponentsInChildren<Renderer>())
-            {
-                Bounds bounds = renderer.bounds;
-                Collider[] hits = Physics.OverlapBox(
-                    bounds.center,
-                    bounds.extents,
-                    preview.transform.rotation,
-                    ~0,
-                    QueryTriggerInteraction.Ignore
-                );
-
-                foreach (var hit in hits)
-                {
-                    if (hit.gameObject == preview)
-                        continue; // ignore itself
-
-                    if (hit is TerrainCollider)
-                        continue; // ✅ ignore terrain
-
-                    return true; // found a blocking object
-                }
-            }
-        }
-
-        // ✅ Bounds-based tree check
-        if (terrain != null && IsNearTree(terrain, preview, treeMinDistance))
-            return true;
-
-        return false;
-    }
-
-    private bool IsNearTree(Terrain terrain, GameObject preview, float minDistance = 2f)
-    {
-        if (terrain == null || preview == null) return false;
-
-        Renderer rend = preview.GetComponentInChildren<Renderer>();
-        if (rend == null) return false;
-
-        Bounds previewBounds = rend.bounds;
-        TreeInstance[] trees = terrain.terrainData.treeInstances;
-
-        for (int i = 0; i < trees.Length; i++)
-        {
-            Vector3 treeWorldPos = Vector3.Scale(trees[i].position, terrain.terrainData.size) + terrain.transform.position;
-
-            Bounds checkBounds = previewBounds;
-            checkBounds.Expand(minDistance * 2f);
-
-            if (checkBounds.Contains(new Vector3(treeWorldPos.x, previewBounds.center.y, treeWorldPos.z)))
-            {
-                return true; // tree inside preview area
-            }
-        }
-
-        return false;
-    }
-
-    private void SetPreviewColor(GameObject obj, Color color)
-    {
-        if (obj == null) return;
-
-        foreach (var renderer in obj.GetComponentsInChildren<Renderer>())
-        {
-            foreach (var mat in renderer.materials)
-            {
-                Color c = mat.color;
-                c.r = color.r;
-                c.g = color.g;
-                c.b = color.b;
-                c.a = color.a;
-                mat.color = c;
-            }
-        }
-    }
-
-    private void MakeTransparent(GameObject obj, float alpha = 0.5f)
-    {
-        if (obj == null) return;
-
-        foreach (var renderer in obj.GetComponentsInChildren<Renderer>())
-        {
-            foreach (var mat in renderer.materials)
-            {
-                Color color = mat.color;
-                color.a = alpha;
-                mat.color = color;
-            }
-        }
+        if (placementCommunicator == null)
+            Debug.LogError("[PlacementController] ObjectPlacementCommunicator missing");
     }
 
     private void DisablePhysics(GameObject obj)
     {
-        if (obj == null) return;
-
         foreach (var rb in obj.GetComponentsInChildren<Rigidbody>())
             Destroy(rb);
 
@@ -225,7 +46,67 @@ private void UpdatePreview(Vector2 screenPosition)
             Destroy(col);
     }
 
-    void OnDrawGizmosSelected()
+    private bool IsNearTree(Terrain terrain, GameObject preview, float minDistance)
+    {
+        var rend = preview.GetComponentInChildren<Renderer>();
+        if (rend == null) return false;
+
+        Bounds previewBounds = rend.bounds;
+        previewBounds.Expand(minDistance * 2f);
+
+        foreach (var tree in terrain.terrainData.treeInstances)
+        {
+            Vector3 worldPos =
+                Vector3.Scale(tree.position, terrain.terrainData.size)
+                + terrain.transform.position;
+
+            if (previewBounds.Contains(
+                new Vector3(worldPos.x, previewBounds.center.y, worldPos.z)))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsPlacementBlocked(GameObject preview, Terrain terrain, float treeMinDistance)
+    {
+        foreach (var renderer in preview.GetComponentsInChildren<Renderer>())
+        {
+            var bounds = renderer.bounds;
+            var hits = Physics.OverlapBox(
+                bounds.center,
+                bounds.extents,
+                preview.transform.rotation,
+                ~0,
+                QueryTriggerInteraction.Ignore
+            );
+
+            foreach (var hit in hits)
+            {
+                if (hit.gameObject == preview) continue;
+                if (hit is TerrainCollider) continue;
+                return true;
+            }
+        }
+
+        return IsNearTree(terrain, preview, treeMinDistance);
+    }
+
+    // ---------------- HELPERS ----------------
+    private void MakeTransparent(GameObject obj, float alpha)
+    {
+        foreach (var r in obj.GetComponentsInChildren<Renderer>())
+            foreach (var m in r.materials)
+                m.color = m.color.WithAlpha(alpha);
+    }
+
+    private void OnDestroy()
+    {
+        if (previewInstance != null)
+            Destroy(previewInstance);
+    }
+
+    private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, placementRadius);
@@ -234,13 +115,105 @@ private void UpdatePreview(Vector2 screenPosition)
         Gizmos.DrawWireSphere(transform.position, playerMaskRadius);
     }
 
-    // ---------------- CLEANUP ----------------
-    private void OnDestroy()
+    private void SetPreviewColor(GameObject obj, Color color)
     {
-        if (previewInstance != null)
+        foreach (var r in obj.GetComponentsInChildren<Renderer>())
+            foreach (var m in r.materials)
+                m.color = color;
+    }
+
+    private async void TryPlaceAtPreview()
+    {
+        if (previewInstance == null || !previewValid)
         {
-            Destroy(previewInstance);
-            previewInstance = null;
+            Debug.LogWarning("[PlacementController] Invalid placement attempt");
+            return;
+        }
+
+        var transformData =
+            TransformationDC.FromPosition(previewInstance.transform.position);
+
+        // 1️⃣ Local optimistic placement
+        objectManager.PlaceObject(Guid.NewGuid(), objectTypeToPlace, transformData);
+
+        // 2️⃣ Notify server
+        await placementCommunicator.SendPlacement(objectTypeToPlace, transformData);
+
+        previewInstance.SetActive(false);
+        previewValid = false;
+    }
+
+    private void Update()
+    {
+        Vector2? inputPos = null;
+
+        if (Mouse.current != null)
+            inputPos = Mouse.current.position.ReadValue();
+        else if (Touchscreen.current != null)
+            inputPos = Touchscreen.current.primaryTouch.position.ReadValue();
+
+        if (!inputPos.HasValue) return;
+
+        UpdatePreview(inputPos.Value);
+
+        if ((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) ||
+            (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame))
+        {
+            TryPlaceAtPreview();
         }
     }
+
+    // ---------------- PREVIEW ----------------
+
+    private void UpdatePreview(Vector2 screenPosition)
+    {
+        var cam = cameraManager.GetCamera();
+        if (cam == null) return;
+
+        Ray ray = cam.ScreenPointToRay(screenPosition);
+
+        if (!Physics.Raycast(ray, out RaycastHit hit))
+        {
+            if (previewInstance != null)
+                previewInstance.SetActive(false);
+
+            previewValid = false;
+            return;
+        }
+
+        if (previewInstance == null)
+        {
+            var prefab = objectManager.GetPrefab(objectTypeToPlace);
+            if (prefab == null) return;
+
+            previewInstance = Instantiate(prefab);
+            MakeTransparent(previewInstance, 0.5f);
+            DisablePhysics(previewInstance);
+        }
+
+        previewInstance.transform.position = hit.point;
+        previewInstance.SetActive(true);
+
+        var terrain = hit.collider.GetComponent<Terrain>();
+        if (terrain == null || hit.collider is not TerrainCollider)
+        {
+            previewValid = false;
+            SetPreviewColor(previewInstance, Color.red.WithAlpha(0.5f));
+            return;
+        }
+
+        float distance = Vector3.Distance(transform.position, hit.point);
+        bool tooFar = distance > placementRadius;
+        bool tooClose = distance < playerMaskRadius;
+        bool blocked = IsPlacementBlocked(previewInstance, terrain, 2f);
+
+        previewValid = !(tooFar || tooClose || blocked);
+
+        SetPreviewColor(
+            previewInstance,
+            previewValid ? Color.green.WithAlpha(0.5f) : Color.red.WithAlpha(0.5f)
+        );
+    }
+
+    // ---------------- FINAL PLACEMENT ----------------
 }
