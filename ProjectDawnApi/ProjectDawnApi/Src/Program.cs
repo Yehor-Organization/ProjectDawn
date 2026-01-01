@@ -99,7 +99,11 @@ using (var scope = app.Services.CreateScope())
 // ==================================================
 // Middleware
 // ==================================================
-if (app.Environment.IsDevelopment())
+var enableSwagger =
+    app.Environment.IsDevelopment() ||
+    Environment.GetEnvironmentVariable("ENABLE_SWAGGER") == "true";
+
+if (enableSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
