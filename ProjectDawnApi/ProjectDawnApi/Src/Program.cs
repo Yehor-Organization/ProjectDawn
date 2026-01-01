@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using ProjectDawnApi;
 
@@ -106,6 +107,8 @@ var enableSwagger =
 if (enableSwagger)
 {
     app.UseSwagger();
+
+    app.UseSwaggerBasicAuth();
     app.UseSwaggerUI();
 }
 

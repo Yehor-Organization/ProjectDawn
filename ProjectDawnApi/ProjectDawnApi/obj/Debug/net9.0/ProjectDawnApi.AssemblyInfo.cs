@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ProjectDawnApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bd03c3e6ba3ff82db3248be8db4518569e87b6c0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+45d147d3f6090230097cc2fc6fc9032b22bdb86b")]
 [assembly: System.Reflection.AssemblyProductAttribute("ProjectDawnApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ProjectDawnApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
