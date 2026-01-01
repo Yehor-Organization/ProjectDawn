@@ -31,7 +31,7 @@ public class FarmQueryService
                 Owners = f.Owners.Select(o => new
                 {
                     o.Id,
-                    o.Name
+                    o.Username
                 }),
 
                 VisitorCount = f.Visitors.Count,
@@ -55,7 +55,7 @@ public class FarmQueryService
                 {
                     v.PlayerId,
                     PlayerName = v.PlayerDataModel != null
-                        ? v.PlayerDataModel.Name
+                        ? v.PlayerDataModel.Username
                         : "Unknown",
                     Transformation = new
                     {
@@ -89,7 +89,7 @@ public class FarmQueryService
                 Owners = f.Owners.Select(o => new
                 {
                     o.Id,
-                    o.Name
+                    o.Username
                 }),
 
                 VisitorCount = f.Visitors.Count,
@@ -98,7 +98,7 @@ public class FarmQueryService
                 {
                     v.PlayerId,
                     PlayerName = v.PlayerDataModel != null
-                        ? v.PlayerDataModel.Name
+                        ? v.PlayerDataModel.Username
                         : "Unknown"
                 })
             })

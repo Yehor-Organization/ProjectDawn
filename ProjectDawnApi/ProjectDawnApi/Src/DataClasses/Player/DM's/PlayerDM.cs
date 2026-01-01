@@ -19,12 +19,12 @@ public class PlayerDM
     public bool IsBanned { get; set; } = false;
 
     [Required]
-    [StringLength(50)]
-    public string Name { get; set; } = string.Empty;
-
-    [Required]
     [StringLength(255)]
     public string PasswordHash { get; set; } = string.Empty;
 
     public ICollection<RefreshTokenDM> RefreshTokens { get; set; } = new List<RefreshTokenDM>();
+
+    [Required]
+    [StringLength(50)]
+    public string Username { get; set; } = string.Empty;
 }

@@ -18,7 +18,7 @@ public class PlayerQueryService
             .Select(p => new
             {
                 p.Id,
-                p.Name,
+                p.Username,
                 p.IsBanned,
                 p.CreatedAtUtc
             })
@@ -31,7 +31,7 @@ public class PlayerQueryService
             .Select(p => new
             {
                 p.Id,
-                p.Name
+                p.Username
             })
             .ToListAsync();
     }

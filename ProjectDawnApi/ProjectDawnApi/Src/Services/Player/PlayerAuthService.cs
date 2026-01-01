@@ -21,7 +21,7 @@ public class PlayerAuthService
     {
         var player = await db.Players
             .Include(p => p.RefreshTokens)
-            .FirstOrDefaultAsync(p => p.Name == dto.Name);
+            .FirstOrDefaultAsync(p => p.Username == dto.Username);
 
         if (player == null ||
             !PasswordHasher.Verify(dto.Password, player.PasswordHash))
@@ -32,7 +32,7 @@ public class PlayerAuthService
 
         var accessToken = JwtTokenFactory.CreateToken(
             player.Id,
-            player.Name,
+            player.Username,
             config);
 
         var refreshToken = new RefreshTokenDM
@@ -52,7 +52,7 @@ public class PlayerAuthService
             player = new
             {
                 player.Id,
-                player.Name
+                player.Username
             }
         };
     }
@@ -87,7 +87,7 @@ public class PlayerAuthService
 
         var newAccessToken = JwtTokenFactory.CreateToken(
             stored.Player.Id,
-            stored.Player.Name,
+            stored.Player.Username,
             config);
 
         await db.SaveChangesAsync();
@@ -104,7 +104,7 @@ public class PlayerAuthService
     // -----------------------
     public async Task RegisterAsync(PlayerDTO dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name))
+        if (string.IsNullOrWhiteSpace(dto.Username))
             throw new ArgumentException("Name is required.");
 
         if (string.IsNullOrWhiteSpace(dto.Password))
@@ -114,14 +114,14 @@ public class PlayerAuthService
             throw new ArgumentException("Password must be at least 6 characters.");
 
         bool exists = await db.Players
-            .AnyAsync(p => p.Name == dto.Name);
+            .AnyAsync(p => p.Username == dto.Username);
 
         if (exists)
             throw new InvalidOperationException("DUPLICATE");
 
         var player = new PlayerDM
         {
-            Name = dto.Name,
+            Username = dto.Username,
             PasswordHash = PasswordHasher.Hash(dto.Password),
             IsBanned = false,
             CreatedAtUtc = DateTime.UtcNow,

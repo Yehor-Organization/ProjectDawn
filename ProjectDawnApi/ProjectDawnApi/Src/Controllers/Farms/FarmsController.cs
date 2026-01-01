@@ -57,7 +57,7 @@ public class FarmsController : ControllerBase
                     Owners = farm.Owners.Select(o => new
                     {
                         o.Id,
-                        o.Name
+                        o.Username
                     })
                 });
         }
