@@ -1624,8 +1624,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventoryUI
   inventory: {fileID: 0}
-  slotPrefab: {fileID: 7010265401690663066, guid: a5f2277cbee8ae64cba33b918e5be776, type: 3}
   slotContainer: {fileID: 414274196}
+  slotPrefab: {fileID: 7010265401690663066, guid: a5f2277cbee8ae64cba33b918e5be776, type: 3}
 --- !u!114 &398226352
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2390,6 +2390,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 609928976}
   m_CullTransparentMesh: 1
+--- !u!1 &626721265
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 626721266}
+  - component: {fileID: 626721267}
+  m_Layer: 0
+  m_Name: PlayerMovement
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &626721266
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 626721265}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2022752755}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &626721267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 626721265}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1109bcbc4fb0edf4d99756e57df54d0d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMovementCommunicator
 --- !u!1 &631522748
 GameObject:
   m_ObjectHideFlags: 0
@@ -3630,7 +3674,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 307024d4e575e3d4aafcc481f27b5dae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AuthService
-  authApi: {fileID: 0}
+  authApi: {fileID: 1506056448}
 --- !u!1 &1079820772
 GameObject:
   m_ObjectHideFlags: 0
@@ -3861,6 +3905,51 @@ Transform:
   m_Children: []
   m_Father: {fileID: 472373293}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1141434351
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1141434352}
+  - component: {fileID: 1141434353}
+  m_Layer: 0
+  m_Name: FarmHub
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1141434352
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1141434351}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2022752755}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1141434353
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1141434351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e080761d7be81084c9b3b9b8ba1e22d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FarmHubCommunicator
+  serverBaseUrl: 
 --- !u!1 &1148120367
 GameObject:
   m_ObjectHideFlags: 0
@@ -3998,6 +4087,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1148120367}
   m_CullTransparentMesh: 1
+--- !u!1 &1165454773
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1165454774}
+  - component: {fileID: 1165454775}
+  m_Layer: 0
+  m_Name: ObjectPlacement
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1165454774
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1165454773}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2022752755}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1165454775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1165454773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea82984462bd7345a6b18c94592098c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectPlacementCommunicator
 --- !u!1 &1200174865
 GameObject:
   m_ObjectHideFlags: 0
@@ -5180,6 +5313,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1506056447}
+  - component: {fileID: 1506056448}
   m_Layer: 0
   m_Name: AuthAPI
   m_TagString: Untagged
@@ -5202,6 +5336,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2022752755}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1506056448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1506056446}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22deec0dd8c1f1f45b60af7711d70a4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AuthAPICommunicator
 --- !u!1 &1513698254
 GameObject:
   m_ObjectHideFlags: 0
@@ -5247,7 +5393,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3b87a44c47a6c940b178c530ffe47ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Services
-  AuthService: {fileID: 0}
+  AuthService: {fileID: 1029893537}
 --- !u!1 &1516544214
 GameObject:
   m_ObjectHideFlags: 0
@@ -5616,6 +5762,50 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -20, y: -20}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1616428080
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1616428081}
+  - component: {fileID: 1616428082}
+  m_Layer: 0
+  m_Name: FarmAPI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1616428081
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1616428080}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2022752755}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1616428082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1616428080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d0aeee7a1f74994bb6e6b775687f46d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FarmAPICommunicator
 --- !u!1 &1622255907
 GameObject:
   m_ObjectHideFlags: 0
@@ -7064,6 +7254,10 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1506056447}
+  - {fileID: 1616428081}
+  - {fileID: 1141434352}
+  - {fileID: 1165454774}
+  - {fileID: 626721266}
   m_Father: {fileID: 2132839676}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2022752756
@@ -7075,14 +7269,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2022752754}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 747e090e9bfa55a4aa3b66c31ee21916, type: 3}
+  m_Script: {fileID: 11500000, guid: 3b4ed016b22633f408ef6150313c2ffd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ApiCommunicators
-  AuthApi: {fileID: 0}
-  FarmApi: {fileID: 0}
-  FarmHub: {fileID: 0}
-  ObjectPlacement: {fileID: 0}
-  PlayerMovement: {fileID: 0}
+  AuthApi: {fileID: 1506056448}
+  FarmApi: {fileID: 1616428082}
+  FarmHub: {fileID: 1141434353}
+  ObjectPlacement: {fileID: 1165454775}
+  PlayerMovement: {fileID: 626721267}
 --- !u!1 &2074679082
 GameObject:
   m_ObjectHideFlags: 0
@@ -7257,9 +7451,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76485b2292ea9f249bc62d7bf8fbdbe1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Core
-  ApiCommunicators: {fileID: 0}
-  Managers: {fileID: 0}
-  Services: {fileID: 0}
+  ApiCommunicators: {fileID: 2022752756}
+  Managers: {fileID: 631522750}
+  Services: {fileID: 1513698256}
 --- !u!4 &2132839676
 Transform:
   m_ObjectHideFlags: 0

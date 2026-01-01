@@ -1,49 +1,37 @@
-﻿using Newtonsoft.Json;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Networking;
 
-public class ObjectPlacementCommunicator : MonoBehaviour
+public class ObjectPlacementCommunicator : APIClientBase
 {
-    [SerializeField] private string serverBaseUrl;
+    // Optional: if this API always requires auth, you can leave this true
+    protected override bool RequiresAuthService => true;
 
+    /// <summary>
+    /// Sends object placement data to the server
+    /// </summary>
     public async Task<bool> SendPlacement(string typeKey, TransformationDC transform)
     {
-        var auth = Core.Instance.Services.AuthService;
-        string token = await auth.GetValidAccessToken();
-        if (string.IsNullOrEmpty(token))
-        {
-            Debug.LogError("[ObjectPlacement] No valid access token");
-            return false;
-        }
-
         var payload = new
         {
             type = typeKey,
             transformation = transform
         };
 
-        string json = JsonConvert.SerializeObject(payload);
-
-        using var req = new UnityWebRequest(
-            $"{serverBaseUrl}/api/Farms/objects",
-            UnityWebRequest.kHttpVerbPOST);
-
-        req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
-        req.downloadHandler = new DownloadHandlerBuffer();
-
-        req.SetRequestHeader("Content-Type", "application/json");
-        req.SetRequestHeader("Authorization", $"Bearer {token}");
-
-        await req.SendWebRequest();
-
-        if (req.result != UnityWebRequest.Result.Success)
+        try
         {
-            Debug.LogError($"[ObjectPlacement] Failed: {req.error}");
+            // We don't care about response body → use object
+            await Post<object>(
+                path: "/api/Farms/objects",
+                body: payload,
+                requiresAuth: true
+            );
+
+            return true;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[ObjectPlacement] Failed: {ex.Message}");
             return false;
         }
-
-        return true;
     }
 }

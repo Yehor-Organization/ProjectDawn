@@ -7,38 +7,64 @@ using UnityEngine.Networking;
 
 public abstract class APIClientBase : MonoBehaviour
 {
-    [SerializeField] protected AuthService authService;
+    private AuthService authService;
+
+    // 🔹 Lazy resolver (NO Awake dependency)
+    protected AuthService Auth
+    {
+        get
+        {
+            if (authService == null)
+            {
+                authService = Core.Instance?.Services?.AuthService;
+
+                if (RequiresAuthService && authService == null)
+                {
+                    throw new InvalidOperationException(
+                        $"[{GetType().Name}] AuthService not available. " +
+                        $"Core.Services.AuthService is not ready.");
+                }
+            }
+
+            return authService;
+        }
+    }
+
+    /// <summary>
+    /// Override to disable auth for public endpoints
+    /// </summary>
+    protected virtual bool RequiresAuthService => true;
 
     // -----------------------
     // DELETE
     // -----------------------
-    protected async Task Delete(string path, bool requiresAuth = true)
+    protected Task Delete(string path, bool requiresAuth = true)
     {
-        await Send<object>("DELETE", path, null, requiresAuth);
+        return Send<object>("DELETE", path, null, requiresAuth);
     }
 
     // -----------------------
     // GET
     // -----------------------
-    protected async Task<T> Get<T>(string path, bool requiresAuth = true)
+    protected Task<T> Get<T>(string path, bool requiresAuth = true)
     {
-        return await Send<T>("GET", path, null, requiresAuth);
+        return Send<T>("GET", path, null, requiresAuth);
     }
 
     // -----------------------
     // POST
     // -----------------------
-    protected async Task<T> Post<T>(string path, object body, bool requiresAuth = true)
+    protected Task<T> Post<T>(string path, object body, bool requiresAuth = true)
     {
-        return await Send<T>("POST", path, body, requiresAuth);
+        return Send<T>("POST", path, body, requiresAuth);
     }
 
     // -----------------------
     // PUT
     // -----------------------
-    protected async Task<T> Put<T>(string path, object body, bool requiresAuth = true)
+    protected Task<T> Put<T>(string path, object body, bool requiresAuth = true)
     {
-        return await Send<T>("PUT", path, body, requiresAuth);
+        return Send<T>("PUT", path, body, requiresAuth);
     }
 
     // -----------------------
@@ -64,7 +90,7 @@ public abstract class APIClientBase : MonoBehaviour
 
         if (requiresAuth)
         {
-            var token = await authService.GetValidAccessToken();
+            var token = await Auth.GetValidAccessToken();
             if (string.IsNullOrEmpty(token))
                 throw new UnauthorizedAccessException("No valid auth token");
 

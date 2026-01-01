@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using ProjectDawnApi.Src.Hubs;
 using ProjectDawnApi.Src.Services.Player;
 
 namespace ProjectDawnApi;
 
+[Authorize]
 public class PlayerHub : Hub
 {
     private readonly PlayerInventoryService inventory;
@@ -12,9 +15,12 @@ public class PlayerHub : Hub
         this.inventory = inventory;
     }
 
-    // 🔁 renamed from RegisterPlayer → Connect
-    public Task Connect(int playerId)
-        => inventory.ConnectAsync(this, playerId);
+    // 🔁 Connect without playerId
+    public Task Connect()
+    {
+        int playerId = this.GetPlayerId();
+        return inventory.ConnectAsync(this, playerId);
+    }
 
     public override Task OnDisconnectedAsync(Exception exception)
         => inventory.HandleDisconnectAsync(this, exception);

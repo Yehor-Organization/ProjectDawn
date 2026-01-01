@@ -6,10 +6,52 @@ using System;
 public class FarmHubCommunicator : HubClientBase
 {
     private string farmId;
+
     private GameManager gameManager;
     private PlayerManager playerManager;
     [SerializeField] private string serverBaseUrl;
 
+    public bool IsConnectedPublic
+    {
+        get => IsConnected;
+    }
+
+    // -----------------------
+    // Lazy manager resolution
+    // -----------------------
+    private GameManager GameManager
+    {
+        get
+        {
+            if (gameManager == null)
+                gameManager = Core.Instance?.Managers?.GameManager;
+
+            if (gameManager == null)
+                throw new InvalidOperationException(
+                    "[FarmHubCommunicator] GameManager not available.");
+
+            return gameManager;
+        }
+    }
+
+    private PlayerManager PlayerManager
+    {
+        get
+        {
+            if (playerManager == null)
+                playerManager = Core.Instance?.Managers?.PlayerManager;
+
+            if (playerManager == null)
+                throw new InvalidOperationException(
+                    "[FarmHubCommunicator] PlayerManager not available.");
+
+            return playerManager;
+        }
+    }
+
+    // -----------------------
+    // Connection lifecycle
+    // -----------------------
     public async Task<bool> Connect(string farmId)
     {
         this.farmId = farmId;
@@ -35,6 +77,9 @@ public class FarmHubCommunicator : HubClientBase
         await StopConnection();
     }
 
+    // -----------------------
+    // Hub messaging
+    // -----------------------
     public async Task SendTransformation(TransformationDC t)
     {
         if (connection?.State != HubConnectionState.Connected)
@@ -47,22 +92,18 @@ public class FarmHubCommunicator : HubClientBase
         );
     }
 
-    private void Awake()
-    {
-        var managers = Core.Instance.Managers;
-        playerManager = managers.PlayerManager;
-        gameManager = managers.GameManager;
-    }
-
+    // -----------------------
+    // Hub event handlers
+    // -----------------------
     private void RegisterHandlers()
     {
         connection.On<int>("PlayerJoined", id =>
             MainThreadDispatcher.Enqueue(() =>
-                playerManager.SpawnPlayer(id, false)));
+                PlayerManager.SpawnPlayer(id, false)));
 
         connection.On<int>("PlayerLeft", id =>
             MainThreadDispatcher.Enqueue(() =>
-                playerManager.RemovePlayer(id)));
+                PlayerManager.RemovePlayer(id)));
 
         connection.On<string, string, TransformationDC>(
             "ObjectPlaced",
@@ -77,12 +118,12 @@ public class FarmHubCommunicator : HubClientBase
             "PlayerTransformationUpdated",
             (id, t) =>
                 MainThreadDispatcher.Enqueue(() =>
-                    playerManager.UpdatePlayerTransformation(id, t)));
+                    PlayerManager.UpdatePlayerTransformation(id, t)));
 
         connection.Closed += _ =>
         {
             MainThreadDispatcher.Enqueue(() =>
-                gameManager.ForceLeaveFarmImmediate());
+                GameManager.ForceLeaveFarmImmediate());
             return Task.CompletedTask;
         };
     }

@@ -2,6 +2,8 @@
 
 public class AuthAPICommunicator : APIClientBase
 {
+    protected override bool RequiresAuthService => false;
+
     // -----------------------
     // LOGIN
     // -----------------------

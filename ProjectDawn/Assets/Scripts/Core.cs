@@ -4,7 +4,6 @@ public class Core : MonoBehaviour
 {
     public ApiCommunicators ApiCommunicators;
 
-    [Header("Containers")]
     public Managers Managers;
 
     public Services Services;

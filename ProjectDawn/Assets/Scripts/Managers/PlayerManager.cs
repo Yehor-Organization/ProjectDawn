@@ -1,10 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System;
 
-/// <summary>
-/// Manages the spawning, tracking, and updating of all player characters in the scene.
-/// This script acts as the central directory for player GameObjects.
-/// </summary>
 public class PlayerManager : MonoBehaviour
 {
     private readonly Dictionary<int, GameObject> remotePlayers = new();
@@ -22,7 +19,7 @@ public class PlayerManager : MonoBehaviour
     [Header("Prefabs")]
     [SerializeField] private GameObject localPlayerPrefab;
 
-    // 🔗 Dependencies (resolved via Core)
+    // Cached (lazy)
     private ObjectManager objectManager;
 
     [SerializeField] private float positionUpdateThreshold = 0.01f;
@@ -30,6 +27,42 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private float rotationUpdateThreshold = 0.01f;
     [SerializeField] private float spawnHeightBuffer = 2f;
 
+    private CameraManager CameraManager
+    {
+        get
+        {
+            if (cameraManager == null)
+                cameraManager = Core.Instance?.Managers?.CameraManager;
+
+            if (cameraManager == null)
+                throw new InvalidOperationException(
+                    "[PlayerManager] CameraManager not available");
+
+            return cameraManager;
+        }
+    }
+
+    // -----------------------
+    // Lazy dependencies
+    // -----------------------
+    private ObjectManager ObjectManager
+    {
+        get
+        {
+            if (objectManager == null)
+                objectManager = Core.Instance?.Managers?.ObjectManager;
+
+            if (objectManager == null)
+                throw new InvalidOperationException(
+                    "[PlayerManager] ObjectManager not available");
+
+            return objectManager;
+        }
+    }
+
+    // -----------------------
+    // Public API
+    // -----------------------
     public void ClearAllPlayers()
     {
         ClearAllRemotePlayers();
@@ -59,9 +92,6 @@ public class PlayerManager : MonoBehaviour
         remotePlayers.Remove(playerId);
     }
 
-    /// <summary>
-    /// Spawns either a local or remote player.
-    /// </summary>
     public void SpawnPlayer(int playerId, bool isLocalPlayer)
     {
         Vector3 spawnPos = defaultSpawnPoint ? defaultSpawnPoint.position : Vector3.zero;
@@ -99,7 +129,7 @@ public class PlayerManager : MonoBehaviour
                 rotationUpdateThreshold
             );
 
-            cameraManager?.ResetCamera(localCtrl);
+            CameraManager.ResetCamera(localCtrl);
         }
         else
         {
@@ -139,20 +169,5 @@ public class PlayerManager : MonoBehaviour
         }
 
         remote.SetTargetTransformation(newTransformation);
-    }
-
-    private void Awake()
-    {
-        // Resolve dependencies from Core
-        var managers = Core.Instance.Managers;
-
-        objectManager = managers.ObjectManager;
-        cameraManager = managers.CameraManager;
-
-        if (objectManager == null)
-            Debug.LogError("[PlayerManager] ObjectManager missing in Core.Managers");
-
-        if (cameraManager == null)
-            Debug.LogError("[PlayerManager] CameraManager missing in Core.Managers");
     }
 }
