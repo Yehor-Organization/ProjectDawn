@@ -15,7 +15,7 @@ namespace ProjectDawnApi.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.4");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
 
             modelBuilder.Entity("FarmDM", b =>
                 {
@@ -46,6 +46,27 @@ namespace ProjectDawnApi.Migrations
                     b.HasIndex("OwnersId");
 
                     b.ToTable("FarmOwners", (string)null);
+                });
+
+            modelBuilder.Entity("ObjectDM", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FarmId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FarmId");
+
+                    b.ToTable("PlacedObjects");
                 });
 
             modelBuilder.Entity("ProjectDawnApi.InventoryDM", b =>
@@ -88,35 +109,6 @@ namespace ProjectDawnApi.Migrations
                         .IsUnique();
 
                     b.ToTable("InventoryItems");
-                });
-
-            modelBuilder.Entity("ProjectDawnApi.ObjectDM", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("FarmDMId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("FarmId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("FarmId1")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FarmId");
-
-                    b.HasIndex("FarmId1");
-
-                    b.ToTable("PlacedObjects");
                 });
 
             modelBuilder.Entity("ProjectDawnApi.PlayerDM", b =>
@@ -205,39 +197,11 @@ namespace ProjectDawnApi.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ProjectDawnApi.InventoryDM", b =>
+            modelBuilder.Entity("ObjectDM", b =>
                 {
-                    b.HasOne("ProjectDawnApi.PlayerDM", "Player")
-                        .WithOne("Inventory")
-                        .HasForeignKey("ProjectDawnApi.InventoryDM", "PlayerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Player");
-                });
-
-            modelBuilder.Entity("ProjectDawnApi.InventoryItemDM", b =>
-                {
-                    b.HasOne("ProjectDawnApi.InventoryDM", "Inventory")
-                        .WithMany("Items")
-                        .HasForeignKey("InventoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Inventory");
-                });
-
-            modelBuilder.Entity("ProjectDawnApi.ObjectDM", b =>
-                {
-                    b.HasOne("FarmDM", null)
+                    b.HasOne("FarmDM", "Farm")
                         .WithMany("Objects")
                         .HasForeignKey("FarmId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FarmDM", "Farm")
-                        .WithMany()
-                        .HasForeignKey("FarmId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -276,6 +240,28 @@ namespace ProjectDawnApi.Migrations
 
                     b.Navigation("Transformation")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectDawnApi.InventoryDM", b =>
+                {
+                    b.HasOne("ProjectDawnApi.PlayerDM", "Player")
+                        .WithOne("Inventory")
+                        .HasForeignKey("ProjectDawnApi.InventoryDM", "PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
+                });
+
+            modelBuilder.Entity("ProjectDawnApi.InventoryItemDM", b =>
+                {
+                    b.HasOne("ProjectDawnApi.InventoryDM", "Inventory")
+                        .WithMany("Items")
+                        .HasForeignKey("InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inventory");
                 });
 
             modelBuilder.Entity("ProjectDawnApi.RefreshTokenDM", b =>

@@ -1,18 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace ProjectDawnApi;
+﻿using ProjectDawnApi;
+using System.ComponentModel.DataAnnotations;
 
 public class ObjectDM
 {
-    [ForeignKey(nameof(FarmId))]
-    public FarmDM Farm { get; set; } = null!;
+    [Key]
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required]
     public int FarmId { get; set; }
 
-    [Key]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public FarmDM Farm { get; set; } = null!;
 
     public TransformationDM Transformation { get; set; } = new();
 

@@ -153,6 +153,15 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    public void SpawnLocalPlayer()
+    {
+        int myPlayerId = GetLocalPlayerId();
+
+        Debug.Log($"[PlayerManager] Spawning LOCAL player (self) {myPlayerId}");
+
+        SpawnPlayer(myPlayerId, isLocalPlayer: true);
+    }
+
     public void UpdatePlayerTransformation(int playerId, TransformationDC newTransformation)
     {
         if (!remotePlayers.TryGetValue(playerId, out var playerObj))
@@ -169,5 +178,15 @@ public class PlayerManager : MonoBehaviour
         }
 
         remote.SetTargetTransformation(newTransformation);
+    }
+
+    private int GetLocalPlayerId()
+    {
+        var auth = Core.Instance.Services.AuthService;
+
+        var token = auth.GetValidAccessToken().GetAwaiter().GetResult();
+        var payload = JWTUtils.Decode(token);
+
+        return payload.PlayerId; // or payload.Sub
     }
 }

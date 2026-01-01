@@ -2,11 +2,16 @@
 
 public class Core : MonoBehaviour
 {
+    [Header("Containers")]
     public ApiCommunicators ApiCommunicators;
 
     public Managers Managers;
 
     public Services Services;
+
+    [Header("Config")]
+    [SerializeField] private AppConfig appConfig;
+
     public static Core Instance { get; private set; }
 
     private void Awake()
@@ -20,7 +25,20 @@ public class Core : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
+        InitializeConfig();
         Validate();
+    }
+
+    private void InitializeConfig()
+    {
+        if (appConfig == null)
+        {
+            Debug.LogError("[Core] AppConfig not assigned");
+            return;
+        }
+
+        Config.APIBaseUrl = appConfig.APIBaseUrl.TrimEnd('/');
+        Debug.Log($"[Core] APIBaseUrl initialized: {Config.APIBaseUrl}");
     }
 
     private void Validate()

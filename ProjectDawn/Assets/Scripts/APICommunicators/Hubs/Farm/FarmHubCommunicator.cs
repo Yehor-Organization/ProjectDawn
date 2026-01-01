@@ -56,10 +56,27 @@ public class FarmHubCommunicator : HubClientBase
     {
         this.farmId = farmId;
 
-        await CreateAndStartConnection($"{serverBaseUrl}/farmHub");
+        var baseUrl = Config.APIBaseUrl?.TrimEnd('/');
+        if (string.IsNullOrEmpty(baseUrl))
+            throw new InvalidOperationException(
+                "[FarmHubCommunicator] Config.APIBaseUrl is not set");
+
+        var hubUrl = $"{baseUrl}/farmHub";
+
+        Debug.Log($"[FarmHubCommunicator] Connecting to hub: {hubUrl}");
+
+        await CreateAndStartConnection(hubUrl);
         RegisterHandlers();
 
+        // 🔹 Tell server we joined
         await connection.InvokeAsync("JoinFarm", farmId);
+
+        // ✅ SPAWN *LOCAL* PLAYER HERE
+        MainThreadDispatcher.Enqueue(() =>
+        {
+            PlayerManager.SpawnLocalPlayer();
+        });
+
         return true;
     }
 

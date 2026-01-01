@@ -52,7 +52,7 @@ namespace ProjectDawnApi
             // -----------------------------
             modelBuilder.Entity<FarmDM>()
                 .HasMany(f => f.Objects)
-                .WithOne()
+                .WithOne(o => o.Farm)
                 .HasForeignKey(p => p.FarmId)
                 .IsRequired();
 

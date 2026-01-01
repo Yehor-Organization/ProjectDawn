@@ -1,24 +1,68 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 
 public class FarmListUI : MonoBehaviour
 {
-    // 🔗 Dependencies
+    // =======================
+    // Dependencies (LAZY)
+    // =======================
+
     private FarmAPICommunicator farmApi;
+    private GameManager gameManager;
 
     [Header("UI")]
     [SerializeField] private RectTransform farmListContainer;
 
+    // =======================
+    // UI
+    // =======================
     [SerializeField] private GameObject farmListItemPrefab;
-    private GameManager gameManager;
+
     [SerializeField] private GameObject inGameUI;
 
     [Header("Settings")]
     [SerializeField] private float refreshPeriod = 1f;
 
     private CancellationTokenSource refreshToken;
+
+    private CancellationTokenSource enableCts;
+
+    private FarmAPICommunicator FarmApi
+    {
+        get
+        {
+            if (farmApi == null)
+                farmApi = Core.Instance?.ApiCommunicators?.FarmApi;
+
+            if (farmApi == null)
+                throw new InvalidOperationException(
+                    "[FarmListUI] FarmAPICommunicator not available.");
+
+            return farmApi;
+        }
+    }
+
+    private GameManager GameManager
+    {
+        get
+        {
+            if (gameManager == null)
+                gameManager = Core.Instance?.Managers?.GameManager;
+
+            if (gameManager == null)
+                throw new InvalidOperationException(
+                    "[FarmListUI] GameManager not available.");
+
+            return gameManager;
+        }
+    }
+
+    // =======================
+    // Unity Lifecycle
+    // =======================
 
     public void FarmJoined()
     {
@@ -28,44 +72,100 @@ public class FarmListUI : MonoBehaviour
 
     private void Awake()
     {
-        var core = Core.Instance;
+        if (farmListContainer == null)
+            Debug.LogError("[FarmListUI] farmListContainer not assigned");
 
-        farmApi = core.ApiCommunicators.FarmApi;
-        gameManager = core.Managers.GameManager;
+        if (farmListItemPrefab == null)
+            Debug.LogError("[FarmListUI] farmListItemPrefab not assigned");
 
-        if (farmApi == null)
-            Debug.LogError("[FarmListUI] FarmApiCommunicator missing");
-
-        if (gameManager == null)
-            Debug.LogError("[FarmListUI] GameManager missing");
-    }
-
-    private void OnDisable()
-    {
-        refreshToken?.Cancel();
-        refreshToken = null;
+        if (inGameUI == null)
+            Debug.LogError("[FarmListUI] inGameUI not assigned");
     }
 
     private void OnEnable()
     {
         inGameUI.SetActive(false);
+
+        enableCts = new CancellationTokenSource();
+        _ = WaitForAuthAndStartAsync(enableCts.Token);
+    }
+
+    private void OnDisable()
+    {
+        enableCts?.Cancel();
+        enableCts = null;
+
+        refreshToken?.Cancel();
+        refreshToken = null;
+
+        var auth = Core.Instance?.Services?.AuthService;
+        if (auth != null)
+            auth.Authenticated -= OnAuthenticated;
+    }
+
+    // =======================
+    // Deferred startup (THE FIX)
+    // =======================
+
+    private async Task WaitForAuthAndStartAsync(CancellationToken token)
+    {
+        // 1️⃣ Wait for Core
+        while (Core.Instance == null)
+        {
+            if (token.IsCancellationRequested) return;
+            await Task.Yield();
+        }
+
+        // 2️⃣ Wait for AuthService
+        while (Core.Instance.Services?.AuthService == null)
+        {
+            if (token.IsCancellationRequested) return;
+            await Task.Yield();
+        }
+
+        var auth = Core.Instance.Services.AuthService;
+
+        // 3️⃣ Start or wait for auth
+        if (auth.IsLoggedIn)
+        {
+            StartRefresh();
+        }
+        else
+        {
+            Debug.Log("[FarmListUI] Waiting for authentication...");
+            auth.Authenticated += OnAuthenticated;
+        }
+    }
+
+    private void OnAuthenticated()
+    {
+        var auth = Core.Instance.Services.AuthService;
+        auth.Authenticated -= OnAuthenticated;
+
+        Debug.Log("[FarmListUI] Authenticated → starting refresh");
+        StartRefresh();
+    }
+
+    private void StartRefresh()
+    {
+        refreshToken?.Cancel();
         refreshToken = new CancellationTokenSource();
         _ = RefreshLoopAsync(refreshToken.Token);
     }
 
-    // -----------------------
-    // ASYNC LOOP (SAFE)
-    // -----------------------
+    // =======================
+    // Public API
+    // =======================
+    // =======================
+    // UI Logic
+    // =======================
 
-    // -----------------------
-    // UI LOGIC
-    // -----------------------
     private async Task PopulateFarmListAsync()
     {
-        var farms = await farmApi.GetAllFarms();
-        if (farms == null) return;
+        var farms = await FarmApi.GetAllFarms();
+        if (farms == null)
+            return;
 
-        // Clear existing items
         foreach (Transform child in farmListContainer)
             Destroy(child.gameObject);
 
@@ -75,7 +175,7 @@ public class FarmListUI : MonoBehaviour
             var farmItemUI = item.GetComponent<FarmListItemUI>();
 
             if (farmItemUI != null)
-                farmItemUI.Setup(farm, gameManager, this);
+                farmItemUI.Setup(farm, GameManager, this);
         }
     }
 
@@ -83,13 +183,20 @@ public class FarmListUI : MonoBehaviour
     {
         while (!token.IsCancellationRequested)
         {
-            await PopulateFarmListAsync();
-
             try
             {
+                await PopulateFarmListAsync();
                 await Task.Delay((int)(refreshPeriod * 1000), token);
             }
-            catch (TaskCanceledException) { }
+            catch (TaskCanceledException)
+            {
+                // expected
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[FarmListUI] Refresh loop error: {ex}");
+                await Task.Delay(1000);
+            }
         }
     }
 }
