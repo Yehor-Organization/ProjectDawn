@@ -16,19 +16,20 @@ public class FarmListUI : MonoBehaviour
     [Header("UI")]
     [SerializeField] private RectTransform farmListContainer;
 
-    // =======================
-    // UI
-    // =======================
     [SerializeField] private GameObject farmListItemPrefab;
-
     [SerializeField] private GameObject inGameUI;
 
     [Header("Settings")]
     [SerializeField] private float refreshPeriod = 1f;
 
     private CancellationTokenSource refreshToken;
-
     private CancellationTokenSource enableCts;
+
+    private bool refreshStarted;
+
+    // =======================
+    // Lazy accessors
+    // =======================
 
     private FarmAPICommunicator FarmApi
     {
@@ -61,7 +62,7 @@ public class FarmListUI : MonoBehaviour
     }
 
     // =======================
-    // Unity Lifecycle
+    // Unity lifecycle
     // =======================
 
     public void FarmJoined()
@@ -86,12 +87,16 @@ public class FarmListUI : MonoBehaviour
     {
         inGameUI.SetActive(false);
 
+        refreshStarted = false;
+
         enableCts = new CancellationTokenSource();
         _ = WaitForAuthAndStartAsync(enableCts.Token);
     }
 
     private void OnDisable()
     {
+        refreshStarted = false;
+
         enableCts?.Cancel();
         enableCts = null;
 
@@ -104,19 +109,19 @@ public class FarmListUI : MonoBehaviour
     }
 
     // =======================
-    // Deferred startup (THE FIX)
+    // Auth gate (FIXED)
     // =======================
 
     private async Task WaitForAuthAndStartAsync(CancellationToken token)
     {
-        // 1️⃣ Wait for Core
+        // Wait for Core
         while (Core.Instance == null)
         {
             if (token.IsCancellationRequested) return;
             await Task.Yield();
         }
 
-        // 2️⃣ Wait for AuthService
+        // Wait for AuthService
         while (Core.Instance.Services?.AuthService == null)
         {
             if (token.IsCancellationRequested) return;
@@ -125,58 +130,44 @@ public class FarmListUI : MonoBehaviour
 
         var auth = Core.Instance.Services.AuthService;
 
-        // 3️⃣ Start or wait for auth
-        if (auth.IsLoggedIn)
+        // 🔑 CRITICAL FIX
+        if (auth.HasValidAccessToken)
         {
+            Debug.Log("[FarmListUI] Already authenticated → starting refresh");
             StartRefresh();
         }
         else
         {
             Debug.Log("[FarmListUI] Waiting for authentication...");
+            auth.Authenticated -= OnAuthenticated;
             auth.Authenticated += OnAuthenticated;
         }
     }
 
     private void OnAuthenticated()
     {
-        var auth = Core.Instance.Services.AuthService;
-        auth.Authenticated -= OnAuthenticated;
+        var auth = Core.Instance?.Services?.AuthService;
+        if (auth != null)
+            auth.Authenticated -= OnAuthenticated;
 
         Debug.Log("[FarmListUI] Authenticated → starting refresh");
         StartRefresh();
     }
 
+    // =======================
+    // Refresh loop
+    // =======================
+
     private void StartRefresh()
     {
+        if (refreshStarted)
+            return;
+
+        refreshStarted = true;
+
         refreshToken?.Cancel();
         refreshToken = new CancellationTokenSource();
         _ = RefreshLoopAsync(refreshToken.Token);
-    }
-
-    // =======================
-    // Public API
-    // =======================
-    // =======================
-    // UI Logic
-    // =======================
-
-    private async Task PopulateFarmListAsync()
-    {
-        var farms = await FarmApi.GetAllFarms();
-        if (farms == null)
-            return;
-
-        foreach (Transform child in farmListContainer)
-            Destroy(child.gameObject);
-
-        foreach (var farm in farms)
-        {
-            var item = Instantiate(farmListItemPrefab, farmListContainer);
-            var farmItemUI = item.GetComponent<FarmListItemUI>();
-
-            if (farmItemUI != null)
-                farmItemUI.Setup(farm, GameManager, this);
-        }
     }
 
     private async Task RefreshLoopAsync(CancellationToken token)
@@ -199,4 +190,31 @@ public class FarmListUI : MonoBehaviour
             }
         }
     }
+
+    // =======================
+    // UI population
+    // =======================
+
+    private async Task PopulateFarmListAsync()
+    {
+        var farms = await FarmApi.GetAllFarms();
+        if (farms == null)
+            return;
+
+        foreach (Transform child in farmListContainer)
+            Destroy(child.gameObject);
+
+        foreach (var farm in farms)
+        {
+            var item = Instantiate(farmListItemPrefab, farmListContainer);
+            var farmItemUI = item.GetComponent<FarmListItemUI>();
+
+            if (farmItemUI != null)
+                farmItemUI.Setup(farm, GameManager, this);
+        }
+    }
+
+    // =======================
+    // Public
+    // =======================
 }

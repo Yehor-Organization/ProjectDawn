@@ -1,21 +1,19 @@
 ﻿using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.UI;
-using System.Threading.Tasks;
 using System;
+using System.Threading.Tasks;
 
 public class GameManager : MonoBehaviour
 {
     private FarmAPICommunicator farmApi;
     private FarmHubCommunicator farmHub;
-    [SerializeField] private GameObject inGameUI;
-    [SerializeField] private GameObject Menu;
 
-    // Cached references (lazy)
     private ObjectManager objectManager;
-
     private PlayerManager playerManager;
-    [SerializeField] private Button SettingsButton;
+    private UIManager uiManager;
+
+    // =======================
+    // Lazy dependencies
+    // =======================
 
     private FarmAPICommunicator FarmApi
     {
@@ -25,7 +23,7 @@ public class GameManager : MonoBehaviour
                 farmApi = Core.Instance?.ApiCommunicators?.FarmApi;
 
             if (farmApi == null)
-                throw new InvalidOperationException("[GameManager] FarmApiCommunicator not available");
+                throw new InvalidOperationException("[GameManager] FarmApi not available");
 
             return farmApi;
         }
@@ -39,15 +37,12 @@ public class GameManager : MonoBehaviour
                 farmHub = Core.Instance?.ApiCommunicators?.FarmHub;
 
             if (farmHub == null)
-                throw new InvalidOperationException("[GameManager] FarmHubCommunicator not available");
+                throw new InvalidOperationException("[GameManager] FarmHub not available");
 
             return farmHub;
         }
     }
 
-    // -----------------------
-    // Lazy dependencies
-    // -----------------------
     private ObjectManager ObjectManager
     {
         get
@@ -76,23 +71,30 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // -----------------------
-    // GAME FLOW
-    // -----------------------
-    public void ForceLeaveFarmImmediate()
+    private UIManager UIManager
     {
-        Debug.Log("[GameManager] Force leaving farm immediately");
+        get
+        {
+            if (uiManager != null)
+                return uiManager;
 
-        ClearFarm();
+            if (Core.Instance?.Managers == null)
+                return null;
 
-        if (Menu != null) Menu.SetActive(true);
-        if (inGameUI != null) inGameUI.SetActive(false);
+            uiManager = Core.Instance.Managers.UIManager;
+            return uiManager;
+        }
     }
+
+    // =======================
+    // GAME FLOW (PUBLIC API)
+    // =======================
 
     public async Task<bool> JoinFarm(string farmId)
     {
+        Debug.Log($"[GameManager] Joining farm {farmId}");
+
         await LeaveFarm();
-        await Task.Delay(200);
 
         var state = await FarmApi.GetFarmState(farmId);
         if (state == null)
@@ -104,23 +106,27 @@ public class GameManager : MonoBehaviour
         ClearFarm();
         BuildFarmFromState(state);
 
-        bool connected = await FarmHub.Connect(farmId);
-        if (!connected)
+        if (!await FarmHub.Connect(farmId))
         {
             Debug.LogError("[GameManager] Failed to connect to farm hub");
-            await ResetToMenu();
             return false;
         }
 
-        Debug.Log("[GameManager] Successfully joined farm");
+        Debug.Log("[GameManager] Joined farm successfully");
+
+        if (UIManager != null)
+            UIManager.ShowGameUI();
+        else
+            Debug.LogWarning("[GameManager] UIManager not ready yet (ShowGameUI skipped)");
+
         return true;
     }
 
     public async Task LeaveFarm()
     {
-        Debug.Log("[GameManager] Leaving farm...");
+        Debug.Log("[GameManager] Leaving farm");
 
-        if (FarmHub.IsConnectedPublic)
+        if (FarmHub != null && FarmHub.IsConnectedPublic)
             await FarmHub.Disconnect();
 
         ClearFarm();
@@ -128,52 +134,34 @@ public class GameManager : MonoBehaviour
 
     public async Task ResetToMenu()
     {
+        Debug.Log("[GameManager] Resetting to menu");
+
         await LeaveFarm();
 
-        var farmUI = FindObjectOfType<FarmListUI>();
-        if (farmUI != null)
-            farmUI.gameObject.SetActive(true);
-
-        if (inGameUI != null)
-            inGameUI.SetActive(false);
+        if (UIManager != null)
+            UIManager.ShowMenu();
+        else
+            Debug.LogWarning("[GameManager] UIManager not ready yet (ShowMenu skipped)");
     }
 
-    // -----------------------
+    // =======================
     // INTERNAL
-    // -----------------------
+    // =======================
+
     private void BuildFarmFromState(FarmStateDM state)
     {
-        // TODO
+        // TODO: spawn farm objects, terrain, crops, etc.
+        Debug.Log("[GameManager] Building farm from state");
     }
 
     private void ClearFarm()
     {
         Debug.Log("[GameManager] Clearing farm state");
 
-        ObjectManager.ClearAll();
-        PlayerManager.ClearAllPlayers();
-    }
+        if (objectManager != null)
+            objectManager.ClearAll();
 
-    private void Start()
-    {
-        if (SettingsButton != null)
-            SettingsButton.onClick.AddListener(ToggleMenu);
-    }
-
-    private void ToggleMenu()
-    {
-        if (Menu == null) return;
-
-        bool isActive = Menu.activeSelf;
-        Menu.SetActive(!isActive);
-
-        if (inGameUI != null)
-            inGameUI.SetActive(isActive);
-    }
-
-    private void Update()
-    {
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-            ToggleMenu();
+        if (playerManager != null)
+            playerManager.ClearAllPlayers();
     }
 }

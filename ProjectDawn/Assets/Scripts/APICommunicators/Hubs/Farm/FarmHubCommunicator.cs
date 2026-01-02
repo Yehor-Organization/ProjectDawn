@@ -139,8 +139,12 @@ public class FarmHubCommunicator : HubClientBase
 
         connection.Closed += _ =>
         {
-            MainThreadDispatcher.Enqueue(() =>
-                GameManager.ForceLeaveFarmImmediate());
+            MainThreadDispatcher.Enqueue(async () =>
+            {
+                await Core.Instance.Managers.GameManager.LeaveFarm();
+                Core.Instance.Managers.UIManager.ShowMenu();
+            });
+
             return Task.CompletedTask;
         };
     }

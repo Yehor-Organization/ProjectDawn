@@ -1,43 +1,40 @@
-using System;
-using System.Threading.Tasks;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class LogInMenuUI : MonoBehaviour
 {
-    // =========================
-    // AUTH / SERVICES
-    // =========================
+    // =====================
+    // Auth / Services
+    // =====================
+
     [Header("Auth / Services")]
     [SerializeField] private AuthService authService;
 
-    // =========================
-    // ROOT
-    // =========================
-    [Header("Root")]
-    [SerializeField] private GameObject rootPanel;
+    // =====================
+    // Input Fields
+    // =====================
 
-    // =========================
-    // INPUT FIELDS
-    // =========================
     [Header("Input Fields")]
     [SerializeField] private TMP_InputField usernameInput;
 
     [SerializeField] private TMP_InputField passwordInput;
     [SerializeField] private TMP_InputField confirmPasswordInput;
 
-    // =========================
-    // BUTTONS
-    // =========================
+    // =====================
+    // Buttons
+    // =====================
+
     [Header("Buttons")]
     [SerializeField] private Button loginButton;
 
     [SerializeField] private Button switchButton;
 
-    // =========================
-    // TEXT
-    // =========================
+    // =====================
+    // Text
+    // =====================
+
     [Header("Text")]
     [SerializeField] private TMP_Text title;
 
@@ -46,74 +43,112 @@ public class LogInMenuUI : MonoBehaviour
     [SerializeField] private TMP_Text switchButtonText;
     [SerializeField] private TMP_Text errorText;
 
-    // =========================
-    // STATE
-    // =========================
-    private bool isBusy = false;
+    // =====================
+    // Internal state
+    // =====================
 
-    private bool isRegister = false;
+    private bool isBusy;
+    private bool isRegister;
 
-    private void ApplyState()
+    // =====================
+    // Lazy UIManager (SAFE)
+    // =====================
+
+    private UIManager uiManager;
+
+    private UIManager UIManager
     {
-        confirmPasswordInput.gameObject.SetActive(isRegister);
+        get
+        {
+            if (uiManager != null)
+                return uiManager;
 
-        title.text = isRegister ? "Register" : "Login";
-        loginButtonText.text = isRegister ? "Register" : "Log In";
+            if (Core.Instance == null || Core.Instance.Managers == null)
+                return null;
 
-        switchText.text = isRegister
-            ? "Already have an account?"
-            : "Don't have an account?";
-
-        switchButtonText.text = isRegister
-            ? "Login"
-            : "Register";
+            uiManager = Core.Instance.Managers.UIManager;
+            return uiManager;
+        }
     }
+
+    // =====================
+    // Unity lifecycle
+    // =====================
 
     private void Awake()
     {
-        rootPanel.SetActive(false);
         errorText.text = "";
-
         ApplyState();
 
         switchButton.onClick.AddListener(ToggleMode);
         loginButton.onClick.AddListener(OnSubmit);
 
+        authService.Authenticated += OnAuthenticated;
         authService.AuthInvalidated += OnAuthInvalidated;
 
-        // Force initial auth check
+        // Lazy auth check → may fire before UIManager exists (safe now)
         _ = authService.GetValidAccessToken();
-    }
-
-    private void ClearInputs()
-    {
-        usernameInput.text = "";
-        passwordInput.text = "";
-        confirmPasswordInput.text = "";
-    }
-
-    private void OnAuthInvalidated(AuthInvalidReason reason)
-    {
-        rootPanel.SetActive(true);
-        SetLoginMode();
-        ClearInputs();
-
-        errorText.text = reason switch
-        {
-            AuthInvalidReason.RefreshFailed => "Session expired. Please log in again.",
-            AuthInvalidReason.TokenCorrupted => "Authentication error. Please log in.",
-            _ => ""
-        };
     }
 
     private void OnDestroy()
     {
+        if (authService == null)
+            return;
+
+        authService.Authenticated -= OnAuthenticated;
         authService.AuthInvalidated -= OnAuthInvalidated;
     }
 
+    // =====================
+    // Auth events
+    // =====================
+
+    private void OnAuthenticated()
+    {
+        ClearInputs();
+        errorText.text = "";
+
+        var manager = UIManager;
+        if (manager == null)
+        {
+            Debug.LogWarning("[LogInMenuUI] UIManager not ready yet (Authenticated)");
+            return;
+        }
+
+        manager.ShowMenu();
+    }
+
+    private void OnAuthInvalidated(AuthInvalidReason reason)
+    {
+        ClearInputs();
+        SetLoginMode();
+
+        errorText.text = reason switch
+        {
+            AuthInvalidReason.RefreshFailed => "Session expired. Please log in again.",
+            AuthInvalidReason.TokenExpired => "Session expired. Please log in again.",
+            AuthInvalidReason.TokenCorrupted => "Authentication error. Please log in.",
+            _ => ""
+        };
+
+        var manager = UIManager;
+        if (manager == null)
+        {
+            Debug.LogWarning("[LogInMenuUI] UIManager not ready yet (Invalidated)");
+            return;
+        }
+
+        manager.ShowLogin();
+    }
+
+    // =====================
+    // UI behavior
+    // =====================
+
     private async void OnSubmit()
     {
-        if (isBusy) return;
+        if (isBusy)
+            return;
 
         errorText.text = "";
 
@@ -141,9 +176,6 @@ public class LogInMenuUI : MonoBehaviour
                 await authService.Register(username, password);
             else
                 await authService.Login(username, password);
-
-            rootPanel.SetActive(false);
-            ClearInputs();
         }
         catch (Exception ex)
         {
@@ -155,15 +187,36 @@ public class LogInMenuUI : MonoBehaviour
         }
     }
 
-    // =========================
-    // Submit
-    // =========================
-    private void SetBusy(bool busy)
+    private void ToggleMode()
     {
-        isBusy = busy;
-        loginButton.interactable = !busy;
-        switchButton.interactable = !busy;
+        if (isBusy)
+            return;
+
+        isRegister = !isRegister;
+        ApplyState();
+        ClearInputs();
+        errorText.text = "";
     }
+
+    private void ApplyState()
+    {
+        confirmPasswordInput.gameObject.SetActive(isRegister);
+
+        title.text = isRegister ? "Register" : "Login";
+        loginButtonText.text = isRegister ? "Register" : "Log In";
+
+        switchText.text = isRegister
+            ? "Already have an account?"
+            : "Don't have an account?";
+
+        switchButtonText.text = isRegister
+            ? "Login"
+            : "Register";
+    }
+
+    // =====================
+    // Helpers
+    // =====================
 
     private void SetLoginMode()
     {
@@ -171,19 +224,17 @@ public class LogInMenuUI : MonoBehaviour
         ApplyState();
     }
 
-    // =========================
-    // Auth Event
-    // =========================
-    // =========================
-    // UI Logic
-    // =========================
-    private void ToggleMode()
+    private void ClearInputs()
     {
-        if (isBusy) return;
+        usernameInput.text = "";
+        passwordInput.text = "";
+        confirmPasswordInput.text = "";
+    }
 
-        isRegister = !isRegister;
-        ApplyState();
-        ClearInputs();
-        errorText.text = "";
+    private void SetBusy(bool busy)
+    {
+        isBusy = busy;
+        loginButton.interactable = !busy;
+        switchButton.interactable = !busy;
     }
 }

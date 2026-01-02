@@ -15,32 +15,33 @@ public class AuthService : MonoBehaviour
 {
     private const int RefreshEarlySeconds = 60;
 
+    private readonly SemaphoreSlim initLock = new(1, 1);
     [SerializeField] private AuthAPICommunicator authApi;
 
     private CancellationTokenSource refreshCts;
     private Task<AuthTokens> refreshTask;
     private AuthTokens tokens;
 
+    private bool isInitialized;
+
     // =========================
-    // EVENTS
+    // UNITY MAIN THREAD CONTEXT
     // =========================
 
-    /// <summary>
-    /// Fired when authentication becomes valid (login / refresh success)
-    /// </summary>
+    private SynchronizationContext unityContext;
+
     public event Action Authenticated;
 
-    /// <summary>
-    /// Fired when authentication becomes invalid
-    /// </summary>
+    // =========================
+    // EVENTS (UNITY SAFE)
+    // =========================
     public event Action<AuthInvalidReason> AuthInvalidated;
+
+    public bool IsLoggedIn => tokens != null;
 
     // =========================
     // STATE
     // =========================
-
-    public bool IsLoggedIn => tokens != null;
-
     public bool HasValidAccessToken
     {
         get
@@ -59,14 +60,10 @@ public class AuthService : MonoBehaviour
         }
     }
 
-    // =========================
-    // UNITY LIFECYCLE
-    // =========================
-
     public async Task Login(string username, string password)
     {
-        var newTokens = await authApi.Login(username, password);
-        ApplyNewTokens(newTokens);
+        await EnsureInitializedAsync();
+        ApplyNewTokens(await authApi.Login(username, password));
     }
 
     // =========================
@@ -74,25 +71,16 @@ public class AuthService : MonoBehaviour
     // =========================
     public async Task Register(string username, string password)
     {
-        var newTokens = await authApi.Register(username, password);
-        ApplyNewTokens(newTokens);
+        await EnsureInitializedAsync();
+        ApplyNewTokens(await authApi.Register(username, password));
     }
 
-    public void Logout()
-    {
-        Invalidate(AuthInvalidReason.TokensMissing);
-    }
-
-    /// <summary>
-    /// Returns a valid access token or null if auth is invalid
-    /// </summary>
     public async Task<string> GetValidAccessToken()
     {
+        await EnsureInitializedAsync();
+
         if (tokens == null)
-        {
-            Invalidate(AuthInvalidReason.TokensMissing);
             return null;
-        }
 
         try
         {
@@ -118,6 +106,7 @@ public class AuthService : MonoBehaviour
         {
             tokens = await refreshTask;
             StartAutoRefresh();
+            RaiseAuthenticated();
             return tokens.AccessToken;
         }
         catch
@@ -131,36 +120,82 @@ public class AuthService : MonoBehaviour
         }
     }
 
+    public void Logout()
+    {
+        EnsureInitializedSync();
+        Invalidate(AuthInvalidReason.TokensMissing);
+    }
+
     private void Awake()
     {
-        TokenStore.Load();
-        tokens = TokenStore.Get();
-
-        if (tokens != null)
-        {
-            Debug.Log("[AuthService] Tokens loaded from storage");
-            StartAutoRefresh();
-            Authenticated?.Invoke();
-        }
-        else
-        {
-            Invalidate(AuthInvalidReason.TokensMissing);
-        }
+        // Capture Unity main thread
+        unityContext = SynchronizationContext.Current;
     }
 
-    private void OnDestroy()
+    private void RaiseAuthenticated()
     {
-        StopAutoRefresh();
+        if (unityContext == null)
+            return;
+
+        unityContext.Post(_ => Authenticated?.Invoke(), null);
     }
 
-    private void OnApplicationFocus(bool hasFocus)
+    private void RaiseInvalidated(AuthInvalidReason reason)
     {
-        if (hasFocus && tokens != null)
-            StartAutoRefresh();
+        if (unityContext == null)
+            return;
+
+        unityContext.Post(_ => AuthInvalidated?.Invoke(reason), null);
     }
 
     // =========================
-    // INTERNAL TOKEN HANDLING
+    // LAZY INITIALIZATION
+    // =========================
+
+    private async Task EnsureInitializedAsync()
+    {
+        if (isInitialized)
+            return;
+
+        await initLock.WaitAsync();
+        try
+        {
+            if (isInitialized)
+                return;
+
+            TokenStore.Load();
+            tokens = TokenStore.Get();
+
+            if (tokens != null)
+            {
+                Debug.Log("[AuthService] Tokens loaded");
+
+                if (IsExpiredSafe(tokens.AccessToken))
+                    await RefreshNow();
+                else
+                    StartAutoRefresh();
+            }
+
+            isInitialized = true;
+        }
+        finally
+        {
+            initLock.Release();
+        }
+    }
+
+    private void EnsureInitializedSync()
+    {
+        if (isInitialized)
+            return;
+
+        TokenStore.Load();
+        tokens = TokenStore.Get();
+        isInitialized = true;
+    }
+
+    // =========================
+    // INTERNAL
     // =========================
 
     private void ApplyNewTokens(AuthTokens newTokens)
@@ -177,7 +212,7 @@ public class AuthService : MonoBehaviour
         Debug.Log("[AuthService] Authenticated");
 
         StartAutoRefresh();
-        Authenticated?.Invoke();
+        RaiseAuthenticated();
     }
 
     private void Invalidate(AuthInvalidReason reason)
@@ -189,11 +224,11 @@ public class AuthService : MonoBehaviour
         refreshTask = null;
 
         Debug.Log($"[AuthService] Invalidated: {reason}");
-        AuthInvalidated?.Invoke(reason);
+        RaiseInvalidated(reason);
     }
 
     // =========================
-    // TOKEN EXPIRY
+    // JWT
     // =========================
 
     private bool IsExpired(string jwt)
@@ -202,8 +237,14 @@ public class AuthService : MonoBehaviour
         return payload.ExpUtc <= DateTime.UtcNow.AddSeconds(30);
     }
 
+    private bool IsExpiredSafe(string jwt)
+    {
+        try { return IsExpired(jwt); }
+        catch { return true; }
+    }
+
     // =========================
-    // AUTO REFRESH
+    // REFRESH
     // =========================
 
     private async Task<AuthTokens> RefreshInternal()
@@ -222,8 +263,9 @@ public class AuthService : MonoBehaviour
         {
             refreshTask = RefreshInternal();
             tokens = await refreshTask;
+
             StartAutoRefresh();
-            Authenticated?.Invoke();
+            RaiseAuthenticated();
         }
         catch
         {
@@ -243,7 +285,6 @@ public class AuthService : MonoBehaviour
             return;
 
         JWTPayload payload;
-
         try
         {
             payload = JWTUtils.Decode(tokens.AccessToken);

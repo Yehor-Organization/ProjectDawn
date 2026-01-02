@@ -7,4 +7,5 @@ public class Managers : MonoBehaviour
     public InventoryManager InventoryManager;
     public ObjectManager ObjectManager;
     public PlayerManager PlayerManager;
+    public UIManager UIManager;
 }
