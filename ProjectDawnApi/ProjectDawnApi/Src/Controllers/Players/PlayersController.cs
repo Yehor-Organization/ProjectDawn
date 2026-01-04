@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectDawnApi.Src.Services.Player;
+using System;
 
 namespace ProjectDawnApi.Src.Controllers.Players;
 
@@ -23,7 +24,7 @@ public class PlayersController : ControllerBase
     // GET PLAYER
     // -----------------------
     [Authorize]
-    [HttpGet("{id:int}")]
+    [HttpGet("[action]/{id:int}")]
     public async Task<IActionResult> GetPlayer(int id)
     {
         var player = await queryService.GetPlayerAsync(id);
@@ -34,7 +35,7 @@ public class PlayersController : ControllerBase
     // GET PLAYERS
     // -----------------------
     [Authorize]
-    [HttpGet]
+    [HttpGet("[action]")]
     public async Task<IActionResult> GetPlayers()
     {
         var players = await queryService.GetPlayersAsync();
@@ -44,7 +45,7 @@ public class PlayersController : ControllerBase
     // -----------------------
     // LOGIN
     // -----------------------
-    [HttpPost("login")]
+    [HttpPost("[action]")]
     public async Task<IActionResult> Login([FromBody] PlayerDTO dto)
     {
         try
@@ -64,7 +65,7 @@ public class PlayersController : ControllerBase
     // -----------------------
     // REFRESH TOKEN
     // -----------------------
-    [HttpPost("refresh")]
+    [HttpPost("[action]")]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenDTO dto)
     {
         try
@@ -84,7 +85,7 @@ public class PlayersController : ControllerBase
     // -----------------------
     // REGISTER
     // -----------------------
-    [HttpPost("register")]
+    [HttpPost("[action]")]
     public async Task<IActionResult> Register([FromBody] PlayerDTO dto)
     {
         try

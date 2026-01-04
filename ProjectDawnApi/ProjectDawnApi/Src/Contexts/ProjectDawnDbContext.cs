@@ -39,7 +39,7 @@ namespace ProjectDawnApi
                 .HasForeignKey(r => r.PlayerId);
 
             // -----------------------------
-            // Farm → Owner (many-to-one)
+            // Farm → Owner (many-to-many)
             // -----------------------------
             modelBuilder.Entity<FarmDM>()
                 .HasMany(f => f.Owners)
@@ -53,29 +53,33 @@ namespace ProjectDawnApi
             modelBuilder.Entity<FarmDM>()
                 .HasMany(f => f.Objects)
                 .WithOne(o => o.Farm)
-                .HasForeignKey(p => p.FarmId)
+                .HasForeignKey(o => o.FarmId)
                 .IsRequired();
 
             // -----------------------------
-            // Farm ↔ Player (many-to-many) via FarmVisitor
+            // FarmSession (VisitorDM)
             // -----------------------------
             modelBuilder.Entity<VisitorDM>()
-                .HasKey(fv => new { fv.FarmId, fv.PlayerId });
+                .HasKey(v => v.Id); // ✅ SINGLE PRIMARY KEY
 
             modelBuilder.Entity<VisitorDM>()
-                .HasOne(fv => fv.Farm)
+                .HasIndex(v => v.PlayerId)
+                .IsUnique(); // ✅ ONE ACTIVE SESSION PER PLAYER
+
+            modelBuilder.Entity<VisitorDM>()
+                .HasOne(v => v.Farm)
                 .WithMany(f => f.Visitors)
-                .HasForeignKey(fv => fv.FarmId)
+                .HasForeignKey(v => v.FarmId)
                 .IsRequired();
 
             modelBuilder.Entity<VisitorDM>()
-                .HasOne(fv => fv.PlayerDataModel)
+                .HasOne(v => v.PlayerDataModel)
                 .WithMany()
-                .HasForeignKey(fv => fv.PlayerId)
+                .HasForeignKey(v => v.PlayerId)
                 .IsRequired();
 
             // -----------------------------
-            // Player → Inventory (one-to-one)
+            // Player → Inventory (1:1)
             // -----------------------------
             modelBuilder.Entity<PlayerDM>()
                 .HasOne(p => p.Inventory)
@@ -84,7 +88,7 @@ namespace ProjectDawnApi
                 .IsRequired();
 
             // -----------------------------
-            // Inventory → InventoryItems (one-to-many)
+            // Inventory → Items (1:M)
             // -----------------------------
             modelBuilder.Entity<InventoryItemDM>()
                 .HasOne(ii => ii.Inventory)
@@ -96,7 +100,7 @@ namespace ProjectDawnApi
             // Owned types
             // -----------------------------
             modelBuilder.Entity<ObjectDM>()
-                .OwnsOne(p => p.Transformation);
+                .OwnsOne(o => o.Transformation);
 
             modelBuilder.Entity<VisitorDM>()
                 .OwnsOne(v => v.Transformation);

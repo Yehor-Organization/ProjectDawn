@@ -1,42 +1,98 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Threading.Tasks;
 
 public class FarmListItemUI : MonoBehaviour
 {
+    [Header("UI")]
     [SerializeField] private TMP_Text farmNameText;
+
     [SerializeField] private TMP_Text ownerNameText;
     [SerializeField] private TMP_Text visitorCountText;
     [SerializeField] private Button joinButton;
 
-    private string farmId;
+    private int farmId;
     private GameManager gameManager;
-    private FarmListUI farmListUI; // ✅ reference to parent
+    private FarmListUI farmListUI;
 
-    public void Setup(FarmInfoDM farm, GameManager gm, FarmListUI parentUI)
+    private bool joinInProgress;
+
+    // =======================
+    // Setup
+    // =======================
+
+    public void Setup(FarmInfoDTO farm, GameManager gm, FarmListUI parentUI)
     {
-        farmId = farm.id.ToString();
+        if (farm == null)
+        {
+            Debug.LogError("[FarmListItemUI] Setup called with null farm");
+            return;
+        }
+
+        farmId = farm.Id;
         gameManager = gm;
-        farmListUI = parentUI; // ✅ assign parent
+        farmListUI = parentUI;
 
-        farmNameText.text = farm.name;
-        ownerNameText.text = $"Owner: {farm.ownerName}";
+        farmNameText.text = farm.Name;
+        ownerNameText.text = $"Owner: {farm.OwnerName}";
+        visitorCountText.text = $"Visitors: {farm.VisitorCount}";
 
-        int visitors = (farm.visitors != null) ? farm.visitors.Count : 0;
-        visitorCountText.text = $"Visitors: {visitors}";
+        joinInProgress = false;
 
         joinButton.onClick.RemoveAllListeners();
-        joinButton.onClick.AddListener(JoinFarm);
+        joinButton.onClick.AddListener(OnJoinClicked);
+        joinButton.interactable = true;
     }
 
-    private async void JoinFarm()
+    // =======================
+    // Join logic
+    // =======================
+
+    private void OnJoinClicked()
     {
-        Debug.Log($"[DEBUG][FarmListItemUI] Joining farm {farmId}...");
-        bool joinedSuccessfully = await gameManager.JoinFarm(farmId);
+        if (joinInProgress)
+            return;
+
+        _ = JoinFarmAsync();
+    }
+
+    private async Task JoinFarmAsync()
+    {
+        if (gameManager == null)
+        {
+            Debug.LogError("[FarmListItemUI] GameManager missing");
+            return;
+        }
+
+        joinInProgress = true;
+        joinButton.interactable = false;
+
+        Debug.Log($"[FarmListItemUI] Joining farm {farmId}...");
+
+        bool joinedSuccessfully = false;
+
+        try
+        {
+            joinedSuccessfully = await gameManager.JoinFarm(farmId.ToString());
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[FarmListItemUI] JoinFarm failed: {ex}");
+        }
+
+        // Object might be destroyed while awaiting
+        if (!this || !gameObject.activeInHierarchy)
+            return;
 
         if (joinedSuccessfully)
         {
-            farmListUI.FarmJoined();
+            Core.Instance?.Managers?.UIManager?.ShowGameUI();
+        }
+        else
+        {
+            joinButton.interactable = true;
+            joinInProgress = false;
         }
     }
 }

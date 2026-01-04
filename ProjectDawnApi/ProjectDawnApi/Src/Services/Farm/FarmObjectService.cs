@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
 using ProjectDawnApi;
 
 public class FarmObjectService
@@ -11,6 +10,9 @@ public class FarmObjectService
         this.db = db;
     }
 
+    // =========================
+    // PLACE OBJECT
+    // =========================
     public async Task<ObjectDM> PlaceAsync(
         int playerId,
         int farmId,
@@ -36,5 +38,26 @@ public class FarmObjectService
         await db.SaveChangesAsync();
 
         return obj;
+    }
+
+    // =========================
+    // GET ALL OBJECTS (NEW)
+    // =========================
+    public async Task<List<ObjectDM>> GetAllAsync(
+        int playerId,
+        int farmId)
+    {
+        bool isOwner = await db.Farms
+            .AnyAsync(f =>
+                f.Id == farmId &&
+                f.Owners.Any(o => o.Id == playerId));
+
+        if (!isOwner)
+            throw new UnauthorizedAccessException("Not a farm owner");
+
+        return await db.PlacedObjects
+            .Where(o => o.FarmId == farmId)
+            .AsNoTracking()
+            .ToListAsync();
     }
 }

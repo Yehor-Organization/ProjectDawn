@@ -11,9 +11,36 @@ public class FarmQueryService
         this.db = db;
     }
 
-    /// <summary>
-    /// Returns a single farm with owners, objects, visitors, and counts.
-    /// </summary>
+    // =========================================================
+    // ✔ NEW: typed farm info for SignalR / lobby UI
+    // =========================================================
+
+    public async Task<FarmInfoDTO?> GetFarmInfoAsync(string farmId)
+    {
+        if (!int.TryParse(farmId, out var id))
+            return null;
+
+        return await db.Farms
+            .AsNoTracking()
+            .Include(f => f.Owners)
+            .Include(f => f.Visitors)
+            .Where(f => f.Id == id)
+            .Select(f => new FarmInfoDTO
+            {
+                Id = f.Id,
+                Name = f.Name,
+                OwnerName = f.Owners
+                    .Select(o => o.Username)
+                    .FirstOrDefault() ?? "Unknown",
+                VisitorCount = f.Visitors.Count
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    // =========================================================
+    // EXISTING: full farm (scene load)
+    // =========================================================
+
     public async Task<object?> GetFarmAsync(int farmId)
     {
         return await db.Farms
@@ -71,9 +98,10 @@ public class FarmQueryService
             .FirstOrDefaultAsync();
     }
 
-    /// <summary>
-    /// Returns all farms with owners and visitor counts.
-    /// </summary>
+    // =========================================================
+    // EXISTING: farm list (REST)
+    // =========================================================
+
     public async Task<IEnumerable<object>> GetFarmsAsync()
     {
         return await db.Farms

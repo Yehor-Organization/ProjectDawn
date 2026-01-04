@@ -23,7 +23,7 @@ public class InventoryController : ControllerBase
     // ---------------------------------
     // ADD ITEM
     // ---------------------------------
-    [HttpPost("add")]
+    [HttpPost("[action]")]
     public async Task<IActionResult> AddItem([FromBody] AddItemDTO dto)
     {
         try
@@ -52,7 +52,7 @@ public class InventoryController : ControllerBase
     // ---------------------------------
     // GET INVENTORY
     // ---------------------------------
-    [HttpGet]
+    [HttpGet("[action]")]
     public async Task<IActionResult> GetInventory()
     {
         try

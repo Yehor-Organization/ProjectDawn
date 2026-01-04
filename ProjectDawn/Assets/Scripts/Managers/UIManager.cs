@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class UIManager : MonoBehaviour
 {
@@ -9,131 +11,64 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject gameUI;
     [SerializeField] private GameObject profileMenuUI;
 
-    [Header("Auth")]
-    [SerializeField] private AuthService authService;
-
     private UIState currentState;
 
     private enum UIState
     {
         Login,
         Menu,
-        Game
+        Game,
+        Profile
     }
 
     // =====================
-    // Unity lifecycle
+    // PUBLIC API (CALLED BY AUTHSERVICE)
     // =====================
-
     public void ShowLogin()
     {
-        HideAllOverlays();
+        Debug.Log("[UIManager] ShowLogin");
         SetState(UIState.Login);
     }
 
-    // =====================
-    // Primary Screens
-    // =====================
     public void ShowMenu()
     {
-        HideAllOverlays();
+        Debug.Log("[UIManager] ShowMenu");
         SetState(UIState.Menu);
     }
 
     public void ShowGameUI()
     {
-        HideAllOverlays();
+        Debug.Log("[UIManager] ShowGameUI");
         SetState(UIState.Game);
     }
 
     public void ToggleMenu()
     {
-        Debug.Log("ToggleMenu");
-
-        bool isMenuActive = menuUI.activeSelf;
-        bool isGameActive = gameUI.activeSelf;
-
-        if (isMenuActive)
+        if (currentState == UIState.Menu)
             ShowGameUI();
-        else if (isGameActive)
+        else
             ShowMenu();
-    }
-
-    public void ShowProfileMenu()
-    {
-        if (profileMenuUI == null)
-        {
-            Debug.LogWarning("[UIManager] ProfileMenu not assigned");
-            return;
-        }
-
-        profileMenuUI.SetActive(true);
-    }
-
-    // =====================
-    // Profile Menu (Overlay)
-    // =====================
-    public void HideProfileMenu()
-    {
-        if (profileMenuUI == null)
-            return;
-
-        profileMenuUI.SetActive(false);
     }
 
     public void ToggleProfileMenu()
     {
-        if (profileMenuUI == null)
-            return;
-
-        profileMenuUI.SetActive(!profileMenuUI.activeSelf);
-    }
-
-    private void Awake()
-    {
-        if (authService == null)
-        {
-            Debug.LogError("[UIManager] AuthService not assigned");
-            return;
-        }
-
-        authService.Authenticated += OnAuthenticated;
-        authService.AuthInvalidated += OnAuthInvalidated;
-    }
-
-    private void OnDestroy()
-    {
-        if (authService == null)
-            return;
-
-        authService.Authenticated -= OnAuthenticated;
-        authService.AuthInvalidated -= OnAuthInvalidated;
-    }
-
-    // =====================
-    // Auth handlers
-    // =====================
-
-    private void OnAuthenticated()
-    {
-        Debug.Log("[UIManager] Authenticated → ShowMenu");
-        ShowMenu();
-    }
-
-    private void OnAuthInvalidated(AuthInvalidReason reason)
-    {
-        Debug.Log($"[UIManager] AuthInvalidated ({reason}) → ShowLogin");
-        ShowLogin();
-    }
-
-    private void HideAllOverlays()
-    {
         if (profileMenuUI != null)
-            profileMenuUI.SetActive(false);
+            profileMenuUI.SetActive(!profileMenuUI.activeSelf);
+    }
+
+    private void Update()
+    {
+        if (currentState == UIState.Login)
+            return;
+
+        if (Keyboard.current?.escapeKey.wasPressedThisFrame == true)
+        {
+            ToggleMenu();
+        }
     }
 
     // =====================
-    // Internal
+    // INTERNAL
     // =====================
 
     private void SetState(UIState state)
@@ -143,7 +78,8 @@ public class UIManager : MonoBehaviour
         loginMenuUI.SetActive(state == UIState.Login);
         menuUI.SetActive(state == UIState.Menu);
         gameUI.SetActive(state == UIState.Game);
+        profileMenuUI.SetActive(state == UIState.Profile);
 
-        Debug.Log($"[UIManager] UI State set to {state}");
+        Debug.Log($"[UIManager] UI State → {state}");
     }
 }

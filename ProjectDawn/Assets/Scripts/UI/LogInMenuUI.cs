@@ -51,27 +51,6 @@ public class LogInMenuUI : MonoBehaviour
     private bool isRegister;
 
     // =====================
-    // Lazy UIManager (SAFE)
-    // =====================
-
-    private UIManager uiManager;
-
-    private UIManager UIManager
-    {
-        get
-        {
-            if (uiManager != null)
-                return uiManager;
-
-            if (Core.Instance == null || Core.Instance.Managers == null)
-                return null;
-
-            uiManager = Core.Instance.Managers.UIManager;
-            return uiManager;
-        }
-    }
-
-    // =====================
     // Unity lifecycle
     // =====================
 
@@ -83,62 +62,8 @@ public class LogInMenuUI : MonoBehaviour
         switchButton.onClick.AddListener(ToggleMode);
         loginButton.onClick.AddListener(OnSubmit);
 
-        authService.Authenticated += OnAuthenticated;
-        authService.AuthInvalidated += OnAuthInvalidated;
-
-        // Lazy auth check → may fire before UIManager exists (safe now)
+        // 🔑 Trigger lazy auth initialization (UI handled by AuthService)
         _ = authService.GetValidAccessToken();
-    }
-
-    private void OnDestroy()
-    {
-        if (authService == null)
-            return;
-
-        authService.Authenticated -= OnAuthenticated;
-        authService.AuthInvalidated -= OnAuthInvalidated;
-    }
-
-    // =====================
-    // Auth events
-    // =====================
-
-    private void OnAuthenticated()
-    {
-        ClearInputs();
-        errorText.text = "";
-
-        var manager = UIManager;
-        if (manager == null)
-        {
-            Debug.LogWarning("[LogInMenuUI] UIManager not ready yet (Authenticated)");
-            return;
-        }
-
-        manager.ShowMenu();
-    }
-
-    private void OnAuthInvalidated(AuthInvalidReason reason)
-    {
-        ClearInputs();
-        SetLoginMode();
-
-        errorText.text = reason switch
-        {
-            AuthInvalidReason.RefreshFailed => "Session expired. Please log in again.",
-            AuthInvalidReason.TokenExpired => "Session expired. Please log in again.",
-            AuthInvalidReason.TokenCorrupted => "Authentication error. Please log in.",
-            _ => ""
-        };
-
-        var manager = UIManager;
-        if (manager == null)
-        {
-            Debug.LogWarning("[LogInMenuUI] UIManager not ready yet (Invalidated)");
-            return;
-        }
-
-        manager.ShowLogin();
     }
 
     // =====================
@@ -179,6 +104,8 @@ public class LogInMenuUI : MonoBehaviour
         }
         catch (Exception ex)
         {
+            // ❗ AuthService already handled UI state
+            // We only show local error
             errorText.text = ex.Message;
         }
         finally
@@ -217,12 +144,6 @@ public class LogInMenuUI : MonoBehaviour
     // =====================
     // Helpers
     // =====================
-
-    private void SetLoginMode()
-    {
-        isRegister = false;
-        ApplyState();
-    }
 
     private void ClearInputs()
     {

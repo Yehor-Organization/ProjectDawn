@@ -77,7 +77,7 @@ public abstract class APIClientBase : MonoBehaviour
         bool requiresAuth)
     {
         var url = $"{Config.APIBaseUrl}{path}";
-        Debug.Log($"[API] Requesting: {url}");
+        //Debug.Log($"[API] Requesting: {url}");
 
         using var req = new UnityWebRequest(url, method);
         req.downloadHandler = new DownloadHandlerBuffer();

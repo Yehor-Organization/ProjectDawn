@@ -21,7 +21,7 @@ public class ObjectPlacementCommunicator : APIClientBase
         {
             // We don't care about response body → use object
             await Post<object>(
-                path: "/api/Farms/objects",
+                path: "/api/Farms/PlaceObject",
                 body: payload,
                 requiresAuth: true
             );

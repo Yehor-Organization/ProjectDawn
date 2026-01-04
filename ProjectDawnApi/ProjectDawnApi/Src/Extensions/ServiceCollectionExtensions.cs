@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<FarmCreationService>();
         services.AddScoped<FarmManagementService>();
         services.AddScoped<FarmQueryService>();
+        services.AddScoped<PlayerTransformationDBCommunicator>();
 
         return services;
     }

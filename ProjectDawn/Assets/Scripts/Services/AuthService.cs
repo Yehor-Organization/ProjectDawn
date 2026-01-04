@@ -30,35 +30,18 @@ public class AuthService : MonoBehaviour
 
     private SynchronizationContext unityContext;
 
-    public event Action Authenticated;
+    // =========================
+    // LAZY UI MANAGER ACCESS
+    // =========================
+
+    public bool IsLoggedIn => tokens != null && !IsExpiredSafe(tokens.AccessToken);
+
+    private UIManager UIManager =>
+        Core.Instance.Managers.UIManager;
 
     // =========================
-    // EVENTS (UNITY SAFE)
+    // UNITY
     // =========================
-    public event Action<AuthInvalidReason> AuthInvalidated;
-
-    public bool IsLoggedIn => tokens != null;
-
-    // =========================
-    // STATE
-    // =========================
-    public bool HasValidAccessToken
-    {
-        get
-        {
-            if (tokens == null)
-                return false;
-
-            try
-            {
-                return !IsExpired(tokens.AccessToken);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-    }
 
     public async Task Login(string username, string password)
     {
@@ -75,6 +58,16 @@ public class AuthService : MonoBehaviour
         ApplyNewTokens(await authApi.Register(username, password));
     }
 
+    public void Logout()
+    {
+        EnsureInitializedSync();
+        Invalidate(AuthInvalidReason.TokensMissing);
+    }
+
+    /// <summary>
+    /// Returns a valid access token or null.
+    /// UI is handled separately.
+    /// </summary>
     public async Task<string> GetValidAccessToken()
     {
         await EnsureInitializedAsync();
@@ -106,7 +99,6 @@ public class AuthService : MonoBehaviour
         {
             tokens = await refreshTask;
             StartAutoRefresh();
-            RaiseAuthenticated();
             return tokens.AccessToken;
         }
         catch
@@ -120,36 +112,13 @@ public class AuthService : MonoBehaviour
         }
     }
 
-    public void Logout()
-    {
-        EnsureInitializedSync();
-        Invalidate(AuthInvalidReason.TokensMissing);
-    }
-
     private void Awake()
     {
-        // Capture Unity main thread
         unityContext = SynchronizationContext.Current;
     }
 
-    private void RaiseAuthenticated()
-    {
-        if (unityContext == null)
-            return;
-
-        unityContext.Post(_ => Authenticated?.Invoke(), null);
-    }
-
-    private void RaiseInvalidated(AuthInvalidReason reason)
-    {
-        if (unityContext == null)
-            return;
-
-        unityContext.Post(_ => AuthInvalidated?.Invoke(reason), null);
-    }
-
     // =========================
-    // LAZY INITIALIZATION
+    // INITIALIZATION
     // =========================
 
     private async Task EnsureInitializedAsync()
@@ -166,14 +135,15 @@ public class AuthService : MonoBehaviour
             TokenStore.Load();
             tokens = TokenStore.Get();
 
-            if (tokens != null)
+            if (tokens != null && !IsExpiredSafe(tokens.AccessToken))
             {
-                Debug.Log("[AuthService] Tokens loaded");
-
-                if (IsExpiredSafe(tokens.AccessToken))
-                    await RefreshNow();
-                else
-                    StartAutoRefresh();
+                Debug.Log("[AuthService] Valid token loaded");
+                StartAutoRefresh();
+            }
+            else
+            {
+                Debug.Log("[AuthService] No valid token");
+                tokens = null;
             }
 
             isInitialized = true;
@@ -182,6 +152,8 @@ public class AuthService : MonoBehaviour
         {
             initLock.Release();
         }
+
+        SyncUI();
     }
 
     private void EnsureInitializedSync()
@@ -192,6 +164,8 @@ public class AuthService : MonoBehaviour
         TokenStore.Load();
         tokens = TokenStore.Get();
         isInitialized = true;
+
+        SyncUI();
     }
 
     // =========================
@@ -212,7 +186,7 @@ public class AuthService : MonoBehaviour
         Debug.Log("[AuthService] Authenticated");
 
         StartAutoRefresh();
-        RaiseAuthenticated();
+        SyncUI();
     }
 
     private void Invalidate(AuthInvalidReason reason)
@@ -224,7 +198,29 @@ public class AuthService : MonoBehaviour
         refreshTask = null;
 
         Debug.Log($"[AuthService] Invalidated: {reason}");
-        RaiseInvalidated(reason);
+
+        SyncUI();
+    }
+
+    // =========================
+    // UI SYNC (SINGLE SOURCE)
+    // =========================
+
+    private void SyncUI()
+    {
+        Debug.Log("[AuthService] SyncUI is called.");
+
+        if (IsLoggedIn)
+        {
+            UIManager.ShowMenu();
+
+            Debug.Log("[AuthService] user logged in.");
+        }
+        else
+        {
+            UIManager.ShowLogin();
+            Debug.Log("[AuthService] user is not logged in.");
+        }
     }
 
     // =========================
@@ -265,7 +261,7 @@ public class AuthService : MonoBehaviour
             tokens = await refreshTask;
 
             StartAutoRefresh();
-            RaiseAuthenticated();
+            SyncUI();
         }
         catch
         {

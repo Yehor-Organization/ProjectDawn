@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using ProjectDawnApi;
 using ProjectDawnApi.Src.Hubs;
 using ProjectDawnApi.Src.Services.Farm;
+using System.Threading;
 
 [Authorize]
 public class FarmHub : Hub
@@ -10,31 +11,66 @@ public class FarmHub : Hub
     private readonly PlayerTransformationService movement;
     private readonly FarmObjectService objects;
     private readonly FarmSessionService sessions;
+    private readonly FarmQueryService farms;
 
     public FarmHub(
         FarmSessionService sessions,
         PlayerTransformationService movement,
-        FarmObjectService objects)
+        FarmObjectService objects,
+        FarmQueryService farms)
     {
         this.sessions = sessions;
         this.movement = movement;
         this.objects = objects;
+        this.farms = farms;
     }
 
-    public Task JoinFarm(string farmId)
+    // =======================
+    // Farm session
+    // =======================
+
+    public async Task JoinFarm(string farmId)
     {
         int playerId = this.GetPlayerId();
-        return sessions.JoinAsync(this, farmId, playerId);
+
+        await sessions.JoinAsync(this, farmId, playerId);
+
+        // 🔔 Notify everyone the list changed
+        await Clients.All.SendAsync(
+            "FarmListUpdated",
+            CancellationToken.None
+        );
+
+        // 🔔 Optional: incremental update
+        if (await farms.GetFarmInfoAsync(farmId) is FarmInfoDTO farm)
+        {
+            await Clients.All.SendAsync(
+                "FarmJoined",
+                farm,
+                CancellationToken.None
+            );
+        }
     }
 
-    public Task LeaveFarm(string farmId)
+    public async Task LeaveFarm(string farmId)
     {
         int playerId = this.GetPlayerId();
-        return sessions.LeaveAsync(this, farmId, playerId);
+
+        await sessions.LeaveAsync(this, farmId, playerId);
+
+        // 🔔 Notify everyone the list changed
+        await Clients.All.SendAsync(
+            "FarmListUpdated",
+            CancellationToken.None
+        );
     }
 
     public override Task OnDisconnectedAsync(Exception ex)
         => sessions.HandleDisconnectAsync(this, ex);
+
+    // =======================
+    // Movement sync
+    // =======================
 
     public Task UpdatePlayerTransformation(string farmId, TransformationDM transform)
     {

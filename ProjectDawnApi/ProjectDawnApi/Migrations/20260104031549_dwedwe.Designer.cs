@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectDawnApi;
 
@@ -10,9 +11,11 @@ using ProjectDawnApi;
 namespace ProjectDawnApi.Migrations
 {
     [DbContext(typeof(ProjectDawnDbContext))]
-    partial class ProjectDawnDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260104031549_dwedwe")]
+    partial class dwedwe
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
@@ -166,29 +169,25 @@ namespace ProjectDawnApi.Migrations
 
             modelBuilder.Entity("VisitorDM", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("FarmId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PlayerId")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("ConnectionId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("FarmId")
+                    b.Property<int>("Id")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("JoinedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PlayerId")
-                        .HasColumnType("INTEGER");
+                    b.HasKey("FarmId", "PlayerId");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("FarmId");
-
-                    b.HasIndex("PlayerId")
-                        .IsUnique();
+                    b.HasIndex("PlayerId");
 
                     b.ToTable("FarmVisitors");
                 });
@@ -302,7 +301,10 @@ namespace ProjectDawnApi.Migrations
 
                     b.OwnsOne("ProjectDawnApi.TransformationDM", "Transformation", b1 =>
                         {
-                            b1.Property<int>("VisitorDMId")
+                            b1.Property<int>("VisitorDMFarmId")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("VisitorDMPlayerId")
                                 .HasColumnType("INTEGER");
 
                             b1.Property<float>("positionX")
@@ -323,12 +325,12 @@ namespace ProjectDawnApi.Migrations
                             b1.Property<float>("rotationZ")
                                 .HasColumnType("REAL");
 
-                            b1.HasKey("VisitorDMId");
+                            b1.HasKey("VisitorDMFarmId", "VisitorDMPlayerId");
 
                             b1.ToTable("FarmVisitors");
 
                             b1.WithOwner()
-                                .HasForeignKey("VisitorDMId");
+                                .HasForeignKey("VisitorDMFarmId", "VisitorDMPlayerId");
                         });
 
                     b.Navigation("Farm");

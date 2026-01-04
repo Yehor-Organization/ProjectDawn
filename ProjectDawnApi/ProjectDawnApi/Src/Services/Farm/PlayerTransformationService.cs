@@ -1,48 +1,47 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
+using ProjectDawnApi.Src.DBCommunicators.Farm;
 
-namespace ProjectDawnApi.Src.Services.Farm
+namespace ProjectDawnApi.Src.Services.Farm;
+
+public class PlayerTransformationService
 {
-    public class PlayerTransformationService
+    private static readonly Dictionary<int, DateTime> LastSave = new();
+    private static readonly TimeSpan SaveInterval = TimeSpan.FromSeconds(60);
+
+    private readonly PlayerTransformationDBCommunicator dbCommunicator;
+
+    public PlayerTransformationService(
+        PlayerTransformationDBCommunicator dbCommunicator)
     {
-        private static readonly Dictionary<int, DateTime> LastSave = new();
-        private static readonly TimeSpan SaveInterval = TimeSpan.FromSeconds(60);
-        private readonly IServiceScopeFactory scopeFactory;
+        this.dbCommunicator = dbCommunicator;
+    }
 
-        public PlayerTransformationService(IServiceScopeFactory scopeFactory)
-        {
-            this.scopeFactory = scopeFactory;
-        }
+    public async Task UpdateAsync(
+        Hub hub,
+        string farmIdStr,
+        int playerId,
+        TransformationDM transform)
+    {
+        // 🔊 Real-time broadcast
+        await hub.Clients.OthersInGroup(farmIdStr)
+            .SendAsync("PlayerTransformationUpdated", playerId, transform);
 
-        public async Task UpdateAsync(
-            Hub hub,
-            string farmIdStr,
-            int playerId,
-            TransformationDM transform)
-        {
-            await hub.Clients.OthersInGroup(farmIdStr)
-                .SendAsync("PlayerTransformationUpdated", playerId, transform);
+        if (!int.TryParse(farmIdStr, out int farmId))
+            return;
 
-            if (!int.TryParse(farmIdStr, out int farmId))
-                return;
+        // ⏱ Throttle DB writes
+        var now = DateTime.UtcNow;
+        if (LastSave.TryGetValue(playerId, out var last) &&
+            now - last < SaveInterval)
+            return;
 
-            var now = DateTime.UtcNow;
-            if (LastSave.TryGetValue(playerId, out var last) && now - last < SaveInterval)
-                return;
+        LastSave[playerId] = now;
 
-            LastSave[playerId] = now;
-
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ProjectDawnDbContext>();
-
-            var visitor = await db.FarmVisitors
-                .FirstOrDefaultAsync(v => v.FarmId == farmId && v.PlayerId == playerId);
-
-            if (visitor != null)
-            {
-                visitor.Transformation = transform;
-                await db.SaveChangesAsync();
-            }
-        }
+        // 💾 Persist via DB communicator
+        await dbCommunicator
+            .UpdateVisitorTransformationAsync(
+                farmId,
+                playerId,
+                transform);
     }
 }

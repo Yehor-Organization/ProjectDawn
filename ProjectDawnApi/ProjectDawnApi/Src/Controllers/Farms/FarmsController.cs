@@ -37,7 +37,7 @@ public class FarmsController : ControllerBase
     private int PlayerId =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    [HttpPost("create")]
+    [HttpPost("[action]")]
     public async Task<IActionResult> CreateFarm(
         [FromBody] CreateFarmRequestDTO request)
     {
@@ -71,7 +71,7 @@ public class FarmsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("[action]/{id:int}")]
     public async Task<IActionResult> DeleteFarm(int id)
     {
         try
@@ -89,21 +89,44 @@ public class FarmsController : ControllerBase
         }
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("[action]/{id:int}")]
     public async Task<IActionResult> GetFarm(int id)
     {
         var farm = await farmQueryService.GetFarmAsync(id);
         return farm == null ? NotFound() : Ok(farm);
     }
 
-    [HttpGet]
+    [HttpGet("[action]")]
     public async Task<IActionResult> GetFarms()
     {
         var farms = await farmQueryService.GetFarmsAsync();
         return Ok(farms);
     }
 
-    [HttpPost("objects")]
+    [HttpGet("[action]")]
+    public async Task<IActionResult> GetObjects()
+    {
+        int? farmId =
+            await farmSessionService.GetCurrentFarmForPlayerAsync(PlayerId);
+
+        if (farmId == null)
+            return BadRequest("Player is not in a farm.");
+
+        try
+        {
+            var objects = await farmObjectService.GetAllAsync(
+                PlayerId,
+                farmId.Value);
+
+            return Ok(objects);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpPost("[action]")]
     public async Task<IActionResult> PlaceObject(
         [FromBody] PlaceObjectDTO dto)
     {

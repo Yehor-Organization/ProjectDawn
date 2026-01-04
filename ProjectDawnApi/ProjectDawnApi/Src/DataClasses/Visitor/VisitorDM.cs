@@ -1,13 +1,18 @@
-﻿namespace ProjectDawnApi.Src.DataClasses.Visitor;
+﻿using ProjectDawnApi;
 
 public class VisitorDM
 {
-    // Nullable because visitors may exist before joining SignalR
-    public string? ConnectionId { get; set; }
+    public int Id { get; set; }   // ✅ PRIMARY KEY
 
-    public FarmDM Farm { get; set; }
     public int FarmId { get; set; }
-    public PlayerDM PlayerDataModel { get; set; }
+    public FarmDM Farm { get; set; } = null!;
+
     public int PlayerId { get; set; }
-    public TransformationDM Transformation { get; set; }
+    public PlayerDM PlayerDataModel { get; set; } = null!;
+
+    public string ConnectionId { get; set; } = string.Empty;
+
+    public TransformationDM Transformation { get; set; } = new();
+
+    public DateTime JoinedAtUtc { get; set; }
 }
