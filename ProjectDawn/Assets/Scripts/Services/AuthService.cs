@@ -16,6 +16,7 @@ public class AuthService : MonoBehaviour
     private const int RefreshEarlySeconds = 60;
 
     private readonly SemaphoreSlim initLock = new(1, 1);
+
     [SerializeField] private AuthAPICommunicator authApi;
 
     private CancellationTokenSource refreshCts;
@@ -23,6 +24,7 @@ public class AuthService : MonoBehaviour
     private AuthTokens tokens;
 
     private bool isInitialized;
+    private Task initializationTask;
 
     // =========================
     // UNITY MAIN THREAD CONTEXT
@@ -31,13 +33,21 @@ public class AuthService : MonoBehaviour
     private SynchronizationContext unityContext;
 
     // =========================
-    // LAZY UI MANAGER ACCESS
+    // AUTH STATE
     // =========================
 
-    public bool IsLoggedIn => tokens != null && !IsExpiredSafe(tokens.AccessToken);
+    public bool IsLoggedIn =>
+        tokens != null && !IsExpiredSafe(tokens.AccessToken);
+
+    // =========================
+    // LAZY UI MANAGER ACCESS (FROM CORE)
+    // =========================
 
     private UIManager UIManager =>
-        Core.Instance.Managers.UIManager;
+        Core.Instance != null &&
+        Core.Instance.Managers != null
+            ? Core.Instance.Managers.UIManager
+            : null;
 
     // =========================
     // UNITY
@@ -115,6 +125,53 @@ public class AuthService : MonoBehaviour
     private void Awake()
     {
         unityContext = SynchronizationContext.Current;
+    }
+
+    private async void Start()
+    {
+        // Wait until Core/Managers/UIManager is ready before any UI sync
+        await WaitForUIManagerAsync();
+
+        // Now initialize auth
+        initializationTask = EnsureInitializedAsync();
+        await initializationTask;
+    }
+
+    private void OnApplicationPause(bool pause)
+    {
+        if (pause)
+            PlayerPrefs.Save();
+    }
+
+    private void OnApplicationQuit()
+    {
+        PlayerPrefs.Save();
+    }
+
+    // =========================
+    // WAIT FOR UI MANAGER (CORE READY)
+    // =========================
+
+    private async Task WaitForUIManagerAsync(
+        int timeoutMs = 10000,
+        CancellationToken cancellationToken = default)
+    {
+        var start = Time.realtimeSinceStartup;
+
+        while (UIManager == null)
+        {
+            if ((Time.realtimeSinceStartup - start) * 1000 > timeoutMs)
+            {
+                Debug.LogError("[AuthService] Timed out waiting for UIManager from Core.Managers.");
+                return; // don't hard-crash startup
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield(); // wait a frame
+        }
+
+        // Debug (optional)
+        // Debug.Log($"[AuthService] UIManager ready (instanceID={UIManager.GetInstanceID()})");
     }
 
     // =========================
@@ -208,17 +265,24 @@ public class AuthService : MonoBehaviour
 
     private void SyncUI()
     {
+        var ui = UIManager;
+
+        if (ui == null)
+        {
+            Debug.LogWarning("[AuthService] SyncUI skipped: UIManager not ready yet.");
+            return;
+        }
+
         Debug.Log("[AuthService] SyncUI is called.");
 
         if (IsLoggedIn)
         {
-            UIManager.ShowMenu();
-
+            ui.ShowMenu();
             Debug.Log("[AuthService] user logged in.");
         }
         else
         {
-            UIManager.ShowLogin();
+            ui.ShowLogin();
             Debug.Log("[AuthService] user is not logged in.");
         }
     }

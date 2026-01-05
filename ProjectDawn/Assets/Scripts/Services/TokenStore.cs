@@ -2,29 +2,41 @@
 
 public static class TokenStore
 {
-    public static void Clear()
+    private const string AccessKey = "access";
+    private const string RefreshKey = "refresh";
+
+    public static void Load()
     {
-        PlayerPrefs.DeleteKey("access");
-        PlayerPrefs.DeleteKey("refresh");
+        // PlayerPrefs loads automatically
+        // Method kept for API symmetry
     }
 
     public static AuthTokens Get()
     {
-        if (!PlayerPrefs.HasKey("access")) return null;
+        if (!PlayerPrefs.HasKey(AccessKey))
+            return null;
 
         return new AuthTokens
         {
-            AccessToken = PlayerPrefs.GetString("access"),
-            RefreshToken = PlayerPrefs.GetString("refresh")
+            AccessToken = PlayerPrefs.GetString(AccessKey),
+            RefreshToken = PlayerPrefs.GetString(RefreshKey, null)
         };
     }
 
-    public static void Load()
-    { }
-
     public static void Set(AuthTokens tokens)
     {
-        PlayerPrefs.SetString("access", tokens.AccessToken);
-        PlayerPrefs.SetString("refresh", tokens.RefreshToken);
+        if (tokens == null)
+            return;
+
+        PlayerPrefs.SetString(AccessKey, tokens.AccessToken);
+        PlayerPrefs.SetString(RefreshKey, tokens.RefreshToken);
+        PlayerPrefs.Save(); // ✅ REQUIRED
+    }
+
+    public static void Clear()
+    {
+        PlayerPrefs.DeleteKey(AccessKey);
+        PlayerPrefs.DeleteKey(RefreshKey);
+        PlayerPrefs.Save(); // ✅ REQUIRED
     }
 }
