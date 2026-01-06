@@ -41,10 +41,7 @@ if (dbProvider == "mysql")
         "SslMode=None;AllowPublicKeyRetrieval=True;";
 
     builder.Services.AddDbContext<ProjectDawnDbContext>(options =>
-        options.UseMySql(
-            mysqlConnection,
-            ServerVersion.AutoDetect(mysqlConnection)
-        ));
+        options.UseMySQL(mysqlConnection));
 }
 else if (dbProvider == "sqlite")
 {

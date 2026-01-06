@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace ProjectDawnApi;
@@ -11,56 +11,17 @@ public static class SwaggerSecurityExtensions
     {
         services.AddSwaggerGen(options =>
         {
-            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            options.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
             {
-                Name = "Authorization",
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT",
-                In = ParameterLocation.Header,
-                Description = "Enter: Bearer {your JWT token}"
+                Description = "JWT Authorization header using the Bearer scheme."
             });
 
-            // 🔑 IMPORTANT: per-endpoint auth only
             options.OperationFilter<AuthorizeOperationFilter>();
         });
 
         return services;
-    }
-}
-
-/// <summary>
-/// Adds lock icon ONLY if [Authorize] is present
-/// </summary>
-public class AuthorizeOperationFilter : IOperationFilter
-{
-    public void Apply(OpenApiOperation operation, OperationFilterContext context)
-    {
-        var hasAuthorize =
-            context.MethodInfo.DeclaringType?.GetCustomAttributes(true)
-                .OfType<AuthorizeAttribute>().Any() == true
-            || context.MethodInfo.GetCustomAttributes(true)
-                .OfType<AuthorizeAttribute>().Any();
-
-        if (!hasAuthorize)
-            return;
-
-        operation.Security = new List<OpenApiSecurityRequirement>
-        {
-            new()
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    },
-                    Array.Empty<string>()
-                }
-            }
-        };
     }
 }

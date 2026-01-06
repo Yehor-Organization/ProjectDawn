@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using ProjectDawnApi.Src.Hubs;
-using ProjectDawnApi.Src.Services.Player;
 
 namespace ProjectDawnApi;
 

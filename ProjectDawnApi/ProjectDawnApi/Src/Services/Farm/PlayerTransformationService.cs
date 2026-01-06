@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using ProjectDawnApi.Src.DBCommunicators.Farm;
 
-namespace ProjectDawnApi.Src.Services.Farm;
+namespace ProjectDawnApi;
 
 public class PlayerTransformationService
 {

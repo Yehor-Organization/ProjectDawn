@@ -6,31 +6,16 @@ using UnityEngine;
 /// </summary>
 public class RemotePlayerController : MonoBehaviour
 {
-    private class Snapshot
-    {
-        public Vector3 position;
-        public Quaternion rotation;
-        public float timestamp;
-    }
-
-    [Header("Interpolation Settings")]
-    [SerializeField] private float bufferTime = 0.1f;       // render ~100ms in the past
-    [SerializeField] private float maxExtrapolation = 0.2f; // if no data, guess ahead max 200ms
-
     private readonly List<Snapshot> snapshots = new List<Snapshot>();
 
-    public void Initialize(float moveSpeed, float rotateSpeed) { } // speeds unused here
+    [Header("Interpolation Settings")]
+    [SerializeField] private float bufferTime = 0.1f;
 
-    void Awake()
-    {
-        snapshots.Clear();
-        snapshots.Add(new Snapshot
-        {
-            position = transform.position,
-            rotation = transform.rotation,
-            timestamp = Time.time
-        });
-    }
+    // render ~100ms in the past
+    [SerializeField] private float maxExtrapolation = 0.2f;
+
+    // if no data, guess ahead max 200ms
+    public void Initialize(float moveSpeed, float rotateSpeed) { }
 
     /// <summary>
     /// Called when the server tells us this player moved.
@@ -57,7 +42,19 @@ public class RemotePlayerController : MonoBehaviour
             snapshots.RemoveAt(0);
     }
 
-    void Update()
+    private void Awake()
+    {
+        snapshots.Clear();
+        snapshots.Add(new Snapshot
+        {
+            position = transform.position,
+            rotation = transform.rotation,
+            timestamp = Time.time
+        });
+    }
+
+    // speeds unused here
+    private void Update()
     {
         if (snapshots.Count < 2)
             return;
@@ -90,5 +87,12 @@ public class RemotePlayerController : MonoBehaviour
             transform.position = Vector3.Lerp(transform.position, prev.position, Time.deltaTime * 10f);
             transform.rotation = Quaternion.Slerp(transform.rotation, prev.rotation, Time.deltaTime * 10f);
         }
+    }
+
+    private class Snapshot
+    {
+        public Vector3 position;
+        public Quaternion rotation;
+        public float timestamp;
     }
 }

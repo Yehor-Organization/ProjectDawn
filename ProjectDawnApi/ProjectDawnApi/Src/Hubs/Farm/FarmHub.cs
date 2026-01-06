@@ -1,28 +1,19 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using ProjectDawnApi;
-using ProjectDawnApi.Src.Hubs;
-using ProjectDawnApi.Src.Services.Farm;
-using System.Threading;
 
 [Authorize]
 public class FarmHub : Hub
 {
     private readonly PlayerTransformationService movement;
-    private readonly FarmObjectService objects;
     private readonly FarmSessionService sessions;
-    private readonly FarmQueryService farms;
 
     public FarmHub(
         FarmSessionService sessions,
-        PlayerTransformationService movement,
-        FarmObjectService objects,
-        FarmQueryService farms)
+        PlayerTransformationService movement)
     {
         this.sessions = sessions;
         this.movement = movement;
-        this.objects = objects;
-        this.farms = farms;
     }
 
     // =======================
@@ -34,22 +25,6 @@ public class FarmHub : Hub
         int playerId = this.GetPlayerId();
 
         await sessions.JoinAsync(this, farmId, playerId);
-
-        // 🔔 Notify everyone the list changed
-        await Clients.All.SendAsync(
-            "FarmListUpdated",
-            CancellationToken.None
-        );
-
-        // 🔔 Optional: incremental update
-        if (await farms.GetFarmInfoAsync(farmId) is FarmInfoDTO farm)
-        {
-            await Clients.All.SendAsync(
-                "FarmJoined",
-                farm,
-                CancellationToken.None
-            );
-        }
     }
 
     public async Task LeaveFarm(string farmId)
@@ -57,11 +32,11 @@ public class FarmHub : Hub
         int playerId = this.GetPlayerId();
 
         await sessions.LeaveAsync(this, farmId, playerId);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, farmId);
 
-        // 🔔 Notify everyone the list changed
-        await Clients.All.SendAsync(
-            "FarmListUpdated",
-            CancellationToken.None
+        await Clients.Group(farmId).SendAsync(
+            "PlayerLeft",
+            playerId
         );
     }
 

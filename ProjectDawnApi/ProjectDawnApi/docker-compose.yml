@@ -29,7 +29,7 @@ services:
     environment:
       DOTNET_RUNNING_IN_CONTAINER: "true"
       DOTNET_USE_POLLING_FILE_WATCHER: "true"
-      DOTNET_VERSION: "9.0"
+      DOTNET_VERSION: "10.0" 
 
 volumes:
   mysql_data:

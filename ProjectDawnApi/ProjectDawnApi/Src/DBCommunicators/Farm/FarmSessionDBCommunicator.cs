@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectDawnApi.Src.DataClasses.Visitor;
 
-namespace ProjectDawnApi.Src.DBCommunicators.Farm;
+namespace ProjectDawnApi;
 
 public class FarmSessionDBCommunicator
 {

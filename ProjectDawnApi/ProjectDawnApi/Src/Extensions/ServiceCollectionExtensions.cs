@@ -1,9 +1,4 @@
-﻿using ProjectDawnApi.Src.DBCommunicators.Farm;
-using ProjectDawnApi.Src.DBCommunicators.Player;
-using ProjectDawnApi.Src.Services.Farm;
-using ProjectDawnApi.Src.Services.Player;
-
-namespace ProjectDawnApi;
+﻿namespace ProjectDawnApi;
 
 public static class ServiceCollectionExtensions
 {

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
-namespace ProjectDawnApi.Src.Hubs;
+namespace ProjectDawnApi;
 
 public static class HubExtensions
 {

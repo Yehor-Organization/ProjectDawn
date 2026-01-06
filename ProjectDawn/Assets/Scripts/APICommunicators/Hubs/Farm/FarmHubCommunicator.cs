@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
-using System;
 
 public class FarmHubCommunicator : HubClientBase
 {
@@ -11,29 +12,24 @@ public class FarmHubCommunicator : HubClientBase
 
     private string farmId;
 
+    private GameManager gameManager;
+
     // =======================
     // State
     // =======================
     private bool handlersRegistered;
 
-    private GameManager gameManager;
-
     private PlayerManager playerManager;
 
-    public event Action OnFarmListUpdated;
-
     public event Action<FarmInfoDTO> OnFarmJoined;
+
+    public event Action OnFarmListUpdated;
 
     public bool IsConnectedPublic => IsConnected;
 
     // =======================
     // Lazy managers
     // =======================
-
-    private GameManager GameManager =>
-        gameManager ??= Core.Instance?.Managers?.GameManager
-        ?? throw new InvalidOperationException(
-            "[FarmHubCommunicator] GameManager not available.");
 
     private PlayerManager PlayerManager =>
         playerManager ??= Core.Instance?.Managers?.PlayerManager
@@ -49,25 +45,23 @@ public class FarmHubCommunicator : HubClientBase
         this.farmId = farmId;
 
         var baseUrl = Config.APIBaseUrl?.TrimEnd('/');
-        if (string.IsNullOrEmpty(baseUrl))
-            throw new InvalidOperationException(
-                "[FarmHubCommunicator] Config.APIBaseUrl is not set");
-
         var hubUrl = $"{baseUrl}/farmHub";
-        Debug.Log($"[FarmHubCommunicator] Connecting to hub: {hubUrl}");
 
         await CreateAndStartConnection(hubUrl);
-
-        // 🔥 Register SignalR → C# bridge ONCE per connection
         RegisterHandlers();
 
-        // 🔹 Tell server we joined
-        await connection.InvokeAsync("JoinFarm", farmId);
-
-        // 🔹 Spawn local player AFTER join
+        // ✅ CLEAR FIRST
         MainThreadDispatcher.Enqueue(() =>
         {
-            PlayerManager.ClearAllPlayers(); // safety
+            PlayerManager.ClearAllPlayers();
+        });
+
+        // THEN join
+        await connection.InvokeAsync("JoinFarm", farmId);
+
+        // Spawn local AFTER join
+        MainThreadDispatcher.Enqueue(() =>
+        {
             PlayerManager.SpawnLocalPlayer();
         });
 
@@ -152,6 +146,7 @@ public class FarmHubCommunicator : HubClientBase
 
         connection.On<int>("PlayerJoined", id =>
         {
+            Debug.Log("PlayerJoined");
             if (farmId == null)
                 return;
 
@@ -178,6 +173,21 @@ public class FarmHubCommunicator : HubClientBase
                 MainThreadDispatcher.Enqueue(() =>
                     PlayerManager.UpdatePlayerTransformation(id, t));
             });
+
+        // ---------- INITIAL SNAPSHOT ----------
+        connection.On<List<int>>("InitialPlayers", ids =>
+        {
+            if (farmId == null)
+                return;
+
+            Debug.Log($"InitialPlayers received: {ids.Count}");
+
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                foreach (var id in ids)
+                    PlayerManager.SpawnPlayer(id, false);
+            });
+        });
 
         // ---------- CONNECTION CLOSED ----------
 

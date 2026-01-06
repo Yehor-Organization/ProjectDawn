@@ -1,84 +1,43 @@
 ﻿using UnityEngine;
-using System.Threading.Tasks;
 using System;
+using System.Threading.Tasks;
 
 public class FarmListUI : MonoBehaviour
 {
-    // =======================
-    // Dependencies (lazy)
-    // =======================
-
+    [SerializeField] private RectTransform farmListContainer;
+    [SerializeField] private GameObject farmListItemPrefab;
     private GameManager gameManager;
 
-    [Header("UI")]
-    [SerializeField] private RectTransform farmListContainer;
-
-    // =======================
-    // UI
-    // =======================
-    [SerializeField] private GameObject farmListItemPrefab;
-
     private FarmAPICommunicator FarmApi =>
-                Core.Instance?.ApiCommunicators?.FarmApi;
+        Core.Instance?.ApiCommunicators?.FarmApi;
 
     private FarmHubCommunicator FarmHub =>
         Core.Instance?.ApiCommunicators?.FarmHub;
 
     private GameManager GameManager =>
         gameManager ??= Core.Instance?.Managers?.GameManager
-        ?? throw new InvalidOperationException("[FarmListUI] GameManager missing");
-
-    // =======================
-    // Unity lifecycle
-    // =======================
-
-    private async void OnEnable()
-    {
-        // ⏳ Wait for Core + API + SignalR
-        while (FarmApi == null || FarmHub == null)
-            await Task.Yield();
-
-        // 🌱 Initial load (REST)
-        await PopulateFarmListAsync();
-
-        // 🔔 Subscribe to SignalR updates
-        FarmHub.OnFarmListUpdated += HandleFarmListUpdated;
-        FarmHub.OnFarmJoined += HandleFarmJoined;
-    }
-
-    private void OnDisable()
-    {
-        if (FarmHub != null)
-        {
-            FarmHub.OnFarmListUpdated -= HandleFarmListUpdated;
-            FarmHub.OnFarmJoined -= HandleFarmJoined;
-        }
-    }
-
-    // =======================
-    // SignalR handlers
-    // =======================
+        ?? throw new InvalidOperationException(
+            "[FarmListUI] GameManager missing");
 
     private async void HandleFarmListUpdated()
     {
         await PopulateFarmListAsync();
     }
 
-    private void HandleFarmJoined(FarmInfoDTO farm)
+    private void OnDisable()
     {
-        if (farm == null)
-            return;
-
-        var item = Instantiate(farmListItemPrefab, farmListContainer);
-        var farmItemUI = item.GetComponent<FarmListItemUI>();
-
-        if (farmItemUI != null)
-            farmItemUI.Setup(farm, GameManager, this);
+        if (FarmHub != null)
+            FarmHub.OnFarmListUpdated -= HandleFarmListUpdated;
     }
 
-    // =======================
-    // UI population
-    // =======================
+    private async void OnEnable()
+    {
+        while (FarmApi == null || FarmHub == null)
+            await Task.Yield();
+
+        await PopulateFarmListAsync();
+        FarmHub.OnFarmListUpdated += HandleFarmListUpdated;
+    }
 
     private async Task PopulateFarmListAsync()
     {
@@ -94,11 +53,13 @@ public class FarmListUI : MonoBehaviour
 
         foreach (var farm in farms)
         {
-            var item = Instantiate(farmListItemPrefab, farmListContainer);
-            var farmItemUI = item.GetComponent<FarmListItemUI>();
+            var item = Instantiate(
+                farmListItemPrefab,
+                farmListContainer
+            );
 
-            if (farmItemUI != null)
-                farmItemUI.Setup(farm, GameManager, this);
+            var ui = item.GetComponent<FarmListItemUI>();
+            ui?.Setup(farm, GameManager, this);
         }
     }
 }

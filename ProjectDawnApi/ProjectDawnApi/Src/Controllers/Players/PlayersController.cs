@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ProjectDawnApi.Src.Services.Player;
 using System;
 
 namespace ProjectDawnApi.Src.Controllers.Players;

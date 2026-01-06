@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using ProjectDawnApi.Src.Services.Farm;
 using System.Security.Claims;
 
 namespace ProjectDawnApi.Src.Controllers.Farms;
@@ -74,7 +73,6 @@ public class FarmsController : ControllerBase
         }
     }
 
-
     [HttpDelete("[action]/{id:int}")]
     public async Task<IActionResult> DeleteFarm(int id)
     {
@@ -96,7 +94,6 @@ public class FarmsController : ControllerBase
             return Forbid();
         }
     }
-
 
     [HttpGet("[action]/{id:int}")]
     public async Task<IActionResult> GetFarm(int id)

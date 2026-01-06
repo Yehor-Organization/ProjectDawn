@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace ProjectDawnApi.Src.DBCommunicators.Farm;
+namespace ProjectDawnApi;
 
 public class PlayerTransformationDBCommunicator
 {

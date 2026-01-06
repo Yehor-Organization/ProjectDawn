@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using ProjectDawnApi.Src.DBCommunicators.Player;
 
-namespace ProjectDawnApi.Src.Services.Player;
+namespace ProjectDawnApi;
 
 public class PlayerInventoryService
 {

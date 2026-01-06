@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace ProjectDawnApi.Src.DBCommunicators.Player;
+namespace ProjectDawnApi;
 
 public class PlayerInventoryDBCommunicator
 {
