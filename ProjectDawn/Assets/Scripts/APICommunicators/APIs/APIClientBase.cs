@@ -68,7 +68,7 @@ public abstract class APIClientBase : MonoBehaviour
     }
 
     // -----------------------
-    // CORE REQUEST
+    // CORE REQUEST (FIXED)
     // -----------------------
     private async Task<T> Send<T>(
         string method,
@@ -77,7 +77,6 @@ public abstract class APIClientBase : MonoBehaviour
         bool requiresAuth)
     {
         var url = $"{Config.APIBaseUrl}{path}";
-        //Debug.Log($"[API] Requesting: {url}");
 
         using var req = new UnityWebRequest(url, method);
         req.downloadHandler = new DownloadHandlerBuffer();
@@ -89,11 +88,20 @@ public abstract class APIClientBase : MonoBehaviour
             req.SetRequestHeader("Content-Type", "application/json");
         }
 
+        // 🔐 AUTH GATE (THIS IS THE FIX)
         if (requiresAuth)
         {
+            // ⛔ DO NOT THROW — WAIT
+            await Auth.WaitUntilLoggedInAsync();
+
             var token = await Auth.GetValidAccessToken();
             if (string.IsNullOrEmpty(token))
+            {
+                Debug.LogError(
+                    $"[{GetType().Name}] Auth token still missing after login."
+                );
                 throw new UnauthorizedAccessException("No valid auth token");
+            }
 
             req.SetRequestHeader("Authorization", $"Bearer {token}");
         }
@@ -102,11 +110,19 @@ public abstract class APIClientBase : MonoBehaviour
 
         if (req.result != UnityWebRequest.Result.Success)
         {
+            Debug.LogError(
+                $"[APIClientBase] HTTP {method} {path} failed\n" +
+                $"Status: {req.responseCode}\n" +
+                $"Error: {req.error}\n" +
+                $"Response: {req.downloadHandler.text}"
+            );
+
             throw new Exception(
                 $"HTTP {method} {path} failed: {req.responseCode} - {req.error}");
         }
 
-        if (typeof(T) == typeof(object) || string.IsNullOrEmpty(req.downloadHandler.text))
+        if (typeof(T) == typeof(object) ||
+            string.IsNullOrEmpty(req.downloadHandler.text))
             return default;
 
         return JsonConvert.DeserializeObject<T>(req.downloadHandler.text);

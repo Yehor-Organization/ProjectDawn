@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using ProjectDawnApi.Src.Services.Farm;
@@ -39,13 +39,16 @@ public class FarmsController : ControllerBase
 
     [HttpPost("[action]")]
     public async Task<IActionResult> CreateFarm(
-        [FromBody] CreateFarmRequestDTO request)
+    [FromBody] CreateFarmRequestDTO request)
     {
         try
         {
             var farm = await farmCreationService.CreateAsync(
                 PlayerId,
                 request.Name);
+
+            // 🔔 BROADCAST: farm list changed
+            await hubContext.Clients.All.SendAsync("FarmListUpdated");
 
             return CreatedAtAction(
                 nameof(GetFarm),
@@ -71,12 +74,17 @@ public class FarmsController : ControllerBase
         }
     }
 
+
     [HttpDelete("[action]/{id:int}")]
     public async Task<IActionResult> DeleteFarm(int id)
     {
         try
         {
             await farmManagementService.DeleteAsync(id, PlayerId);
+
+            // 🔔 BROADCAST: farm list changed
+            await hubContext.Clients.All.SendAsync("FarmListUpdated");
+
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -88,6 +96,7 @@ public class FarmsController : ControllerBase
             return Forbid();
         }
     }
+
 
     [HttpGet("[action]/{id:int}")]
     public async Task<IActionResult> GetFarm(int id)

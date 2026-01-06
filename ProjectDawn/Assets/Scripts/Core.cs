@@ -1,18 +1,26 @@
-﻿using UnityEngine;
+﻿using System.Threading.Tasks;
+using UnityEngine;
 
 public class Core : MonoBehaviour
 {
     [Header("Containers")]
     public ApiCommunicators ApiCommunicators;
-
     public Managers Managers;
-
     public Services Services;
 
     [Header("Config")]
     [SerializeField] private AppConfig appConfig;
 
     public static Core Instance { get; private set; }
+
+    // =========================
+    // READINESS
+    // =========================
+
+    private static TaskCompletionSource<Core> readyTcs =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public static Task<Core> WhenReady => readyTcs.Task;
 
     private void Awake()
     {
@@ -27,6 +35,8 @@ public class Core : MonoBehaviour
 
         InitializeConfig();
         Validate();
+
+        readyTcs.TrySetResult(this);
     }
 
     private void InitializeConfig()

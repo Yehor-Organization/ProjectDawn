@@ -14,6 +14,7 @@ public enum AuthInvalidReason
 public class AuthService : MonoBehaviour
 {
     private const int RefreshEarlySeconds = 60;
+    private const string LogTag = "[AuthService]";
 
     private readonly SemaphoreSlim initLock = new(1, 1);
 
@@ -33,6 +34,12 @@ public class AuthService : MonoBehaviour
     private SynchronizationContext unityContext;
 
     // =========================
+    // CACHED UI MANAGER
+    // =========================
+
+    private UIManager uiManager;
+
+    // =========================
     // AUTH STATE
     // =========================
 
@@ -40,99 +47,36 @@ public class AuthService : MonoBehaviour
         tokens != null && !IsExpiredSafe(tokens.AccessToken);
 
     // =========================
-    // LAZY UI MANAGER ACCESS (FROM CORE)
+    // LOGGING
     // =========================
 
-    private UIManager UIManager =>
-        Core.Instance != null &&
-        Core.Instance.Managers != null
-            ? Core.Instance.Managers.UIManager
-            : null;
+    private void Log(string message)
+        => Debug.Log($"{LogTag} {message}");
+
+    private void LogWarn(string message)
+        => Debug.LogWarning($"{LogTag} {message}");
+
+    private void LogError(string message)
+        => Debug.LogError($"{LogTag} {message}");
 
     // =========================
     // UNITY
     // =========================
 
-    public async Task Login(string username, string password)
-    {
-        await EnsureInitializedAsync();
-        ApplyNewTokens(await authApi.Login(username, password));
-    }
-
-    // =========================
-    // PUBLIC AUTH API
-    // =========================
-    public async Task Register(string username, string password)
-    {
-        await EnsureInitializedAsync();
-        ApplyNewTokens(await authApi.Register(username, password));
-    }
-
-    public void Logout()
-    {
-        EnsureInitializedSync();
-        Invalidate(AuthInvalidReason.TokensMissing);
-    }
-
-    /// <summary>
-    /// Returns a valid access token or null.
-    /// UI is handled separately.
-    /// </summary>
-    public async Task<string> GetValidAccessToken()
-    {
-        await EnsureInitializedAsync();
-
-        if (tokens == null)
-            return null;
-
-        try
-        {
-            if (!IsExpired(tokens.AccessToken))
-                return tokens.AccessToken;
-        }
-        catch
-        {
-            Invalidate(AuthInvalidReason.TokenCorrupted);
-            return null;
-        }
-
-        if (string.IsNullOrEmpty(tokens.RefreshToken))
-        {
-            Invalidate(AuthInvalidReason.TokenExpired);
-            return null;
-        }
-
-        if (refreshTask == null)
-            refreshTask = RefreshInternal();
-
-        try
-        {
-            tokens = await refreshTask;
-            StartAutoRefresh();
-            return tokens.AccessToken;
-        }
-        catch
-        {
-            Invalidate(AuthInvalidReason.RefreshFailed);
-            return null;
-        }
-        finally
-        {
-            refreshTask = null;
-        }
-    }
-
     private void Awake()
     {
         unityContext = SynchronizationContext.Current;
+        Log("Awake()");
     }
 
     private async void Start()
     {
-        // Wait until Core/Managers/UIManager is ready before any UI sync
-        await WaitForUIManagerAsync();
+        Log("Start() — waiting for UIManager");
 
-        // Now initialize auth
+        await EnsureUIManagerAsync();
+
+        Log("UIManager ready — initializing auth");
+
         initializationTask = EnsureInitializedAsync();
         await initializationTask;
     }
@@ -149,29 +93,112 @@ public class AuthService : MonoBehaviour
     }
 
     // =========================
-    // WAIT FOR UI MANAGER (CORE READY)
+    // PUBLIC AUTH API
     // =========================
 
-    private async Task WaitForUIManagerAsync(
-        int timeoutMs = 10000,
-        CancellationToken cancellationToken = default)
+    public async Task Login(string username, string password)
     {
-        var start = Time.realtimeSinceStartup;
+        Log($"Login attempt for '{username}'");
 
-        while (UIManager == null)
+        await EnsureInitializedAsync();
+        ApplyNewTokens(await authApi.Login(username, password));
+    }
+
+    public async Task Register(string username, string password)
+    {
+        Log($"Register attempt for '{username}'");
+
+        await EnsureInitializedAsync();
+        ApplyNewTokens(await authApi.Register(username, password));
+    }
+
+    public void Logout()
+    {
+        EnsureInitializedSync();
+        Invalidate(AuthInvalidReason.TokensMissing);
+    }
+
+    /// <summary>
+    /// HARD AUTH GATE.
+    /// Any system that requires auth MUST await this.
+    /// </summary>
+    public async Task WaitUntilLoggedInAsync()
+    {
+        while (!IsLoggedIn)
+            await Task.Yield();
+    }
+
+    /// <summary>
+    /// Returns a valid access token or null.
+    /// </summary>
+    public async Task<string> GetValidAccessToken()
+    {
+        await EnsureInitializedAsync();
+
+        if (tokens == null)
         {
-            if ((Time.realtimeSinceStartup - start) * 1000 > timeoutMs)
-            {
-                Debug.LogError("[AuthService] Timed out waiting for UIManager from Core.Managers.");
-                return; // don't hard-crash startup
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            await Task.Yield(); // wait a frame
+            Log("GetValidAccessToken → no tokens");
+            return null;
         }
 
-        // Debug (optional)
-        // Debug.Log($"[AuthService] UIManager ready (instanceID={UIManager.GetInstanceID()})");
+        try
+        {
+            if (!IsExpired(tokens.AccessToken))
+            {
+                Log("Access token valid");
+                return tokens.AccessToken;
+            }
+        }
+        catch
+        {
+            LogError("Access token corrupted");
+            Invalidate(AuthInvalidReason.TokenCorrupted);
+            return null;
+        }
+
+        if (string.IsNullOrEmpty(tokens.RefreshToken))
+        {
+            LogWarn("Token expired and refresh token missing");
+            Invalidate(AuthInvalidReason.TokenExpired);
+            return null;
+        }
+
+        if (refreshTask == null)
+        {
+            Log("Starting refresh task");
+            refreshTask = RefreshInternal();
+        }
+
+        try
+        {
+            tokens = await refreshTask;
+            Log("Token refresh successful");
+
+            StartAutoRefresh();
+            return tokens.AccessToken;
+        }
+        catch
+        {
+            LogError("Token refresh failed");
+            Invalidate(AuthInvalidReason.RefreshFailed);
+            return null;
+        }
+        finally
+        {
+            refreshTask = null;
+        }
+    }
+
+    // =========================
+    // ENSURE UI MANAGER
+    // =========================
+
+    private async Task EnsureUIManagerAsync()
+    {
+        if (uiManager != null)
+            return;
+
+        uiManager = await CoreWaitHelpers.WaitForManagerAsync(m => m.UIManager);
     }
 
     // =========================
@@ -182,6 +209,8 @@ public class AuthService : MonoBehaviour
     {
         if (isInitialized)
             return;
+
+        Log("EnsureInitializedAsync() entered");
 
         await initLock.WaitAsync();
         try
@@ -194,12 +223,12 @@ public class AuthService : MonoBehaviour
 
             if (tokens != null && !IsExpiredSafe(tokens.AccessToken))
             {
-                Debug.Log("[AuthService] Valid token loaded");
+                Log("Valid token loaded from storage");
                 StartAutoRefresh();
             }
             else
             {
-                Debug.Log("[AuthService] No valid token");
+                Log("No valid stored token");
                 tokens = null;
             }
 
@@ -233,6 +262,7 @@ public class AuthService : MonoBehaviour
     {
         if (newTokens == null)
         {
+            LogError("ApplyNewTokens received null");
             Invalidate(AuthInvalidReason.TokenCorrupted);
             return;
         }
@@ -240,7 +270,7 @@ public class AuthService : MonoBehaviour
         tokens = newTokens;
         TokenStore.Set(newTokens);
 
-        Debug.Log("[AuthService] Authenticated");
+        Log("Authentication successful");
 
         StartAutoRefresh();
         SyncUI();
@@ -254,36 +284,28 @@ public class AuthService : MonoBehaviour
         tokens = null;
         refreshTask = null;
 
-        Debug.Log($"[AuthService] Invalidated: {reason}");
+        LogWarn($"Invalidated → {reason}");
 
         SyncUI();
     }
 
     // =========================
-    // UI SYNC (SINGLE SOURCE)
+    // UI SYNC
     // =========================
 
-    private void SyncUI()
+    private async void SyncUI()
     {
-        var ui = UIManager;
-
-        if (ui == null)
-        {
-            Debug.LogWarning("[AuthService] SyncUI skipped: UIManager not ready yet.");
-            return;
-        }
-
-        Debug.Log("[AuthService] SyncUI is called.");
+        await EnsureUIManagerAsync();
 
         if (IsLoggedIn)
         {
-            ui.ShowMenu();
-            Debug.Log("[AuthService] user logged in.");
+            Log("UI → ShowMenu()");
+            uiManager.ShowMenu();
         }
         else
         {
-            ui.ShowLogin();
-            Debug.Log("[AuthService] user is not logged in.");
+            Log("UI → ShowLogin()");
+            uiManager.ShowLogin();
         }
     }
 
@@ -309,6 +331,7 @@ public class AuthService : MonoBehaviour
 
     private async Task<AuthTokens> RefreshInternal()
     {
+        Log("Refreshing token");
         var refreshed = await authApi.Refresh(tokens.RefreshToken);
         TokenStore.Set(refreshed);
         return refreshed;
@@ -321,6 +344,8 @@ public class AuthService : MonoBehaviour
 
         try
         {
+            Log("Immediate refresh triggered");
+
             refreshTask = RefreshInternal();
             tokens = await refreshTask;
 
@@ -329,6 +354,7 @@ public class AuthService : MonoBehaviour
         }
         catch
         {
+            LogError("Immediate refresh failed");
             Invalidate(AuthInvalidReason.RefreshFailed);
         }
         finally
@@ -342,7 +368,10 @@ public class AuthService : MonoBehaviour
         StopAutoRefresh();
 
         if (tokens == null || string.IsNullOrEmpty(tokens.RefreshToken))
+        {
+            Log("Auto-refresh skipped — no refresh token");
             return;
+        }
 
         JWTPayload payload;
         try
@@ -351,12 +380,15 @@ public class AuthService : MonoBehaviour
         }
         catch
         {
+            LogError("JWT decode failed during auto-refresh setup");
             Invalidate(AuthInvalidReason.TokenCorrupted);
             return;
         }
 
         var refreshAt = payload.ExpUtc.AddSeconds(-RefreshEarlySeconds);
         var delay = refreshAt - DateTime.UtcNow;
+
+        Log($"Auto-refresh scheduled in {delay.TotalSeconds:F1}s");
 
         if (delay <= TimeSpan.Zero)
         {

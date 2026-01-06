@@ -5,7 +5,6 @@ using ProjectDawnApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Console.WriteLine("SDYGDYGW " + builder.Environment.IsDevelopment());
 if (builder.Environment.IsDevelopment())
 {
     var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");

@@ -1,17 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class LogInMenuUI : MonoBehaviour
 {
-    // =====================
-    // Auth / Services
-    // =====================
-
-    [Header("Auth / Services")]
-    [SerializeField] private AuthService authService;
-
     // =====================
     // Input Fields
     // =====================
@@ -49,12 +43,14 @@ public class LogInMenuUI : MonoBehaviour
 
     private bool isBusy;
     private bool isRegister;
+    private AuthService authService;
+
 
     // =====================
     // Unity lifecycle
     // =====================
 
-    private void Awake()
+    private async void Awake()
     {
         errorText.text = "";
         ApplyState();
@@ -62,8 +58,19 @@ public class LogInMenuUI : MonoBehaviour
         switchButton.onClick.AddListener(ToggleMode);
         loginButton.onClick.AddListener(OnSubmit);
 
+        Debug.Log("Start() — waiting for UIManager");
+
+        await EnsureAuthServiceAsync();
         // 🔑 Trigger lazy auth initialization (UI handled by AuthService)
         _ = authService.GetValidAccessToken();
+    }
+
+    private async Task EnsureAuthServiceAsync()
+    {
+        if (authService != null)
+            return;
+
+        authService = await CoreWaitHelpers.WaitForServiceAsync(s => s.AuthService);
     }
 
     // =====================

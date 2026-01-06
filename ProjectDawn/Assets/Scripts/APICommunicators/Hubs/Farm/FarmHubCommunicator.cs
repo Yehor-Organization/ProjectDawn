@@ -130,6 +130,7 @@ public class FarmHubCommunicator : HubClientBase
             if (farmId == null)
                 return;
 
+            Debug.Log("Farm list updated event received.");
             MainThreadDispatcher.Enqueue(() =>
             {
                 OnFarmListUpdated?.Invoke();
