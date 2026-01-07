@@ -101,17 +101,22 @@ public class CameraManager : MonoBehaviour
 
     private void Update()
     {
-        // Use new Input System API
-        if (Keyboard.current != null)
+        // 🔒 NEVER poll input while unfocused
+        if (!Application.isFocused)
+            return;
+
+        var kb = Keyboard.current;
+        if (kb == null)
+            return;
+
+        if (kb.qKey.wasPressedThisFrame)
         {
-            if (Keyboard.current.qKey.wasPressedThisFrame)
-            {
-                RotateAroundPlayerLeft();
-            }
-            if (Keyboard.current.eKey.wasPressedThisFrame)
-            {
-                RotateAroundPlayerRight();
-            }
+            RotateAroundPlayerLeft();
+        }
+
+        if (kb.eKey.wasPressedThisFrame)
+        {
+            RotateAroundPlayerRight();
         }
     }
 }

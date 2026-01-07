@@ -21,9 +21,17 @@ public class PlayerTransformationService
         int playerId,
         TransformationDM transform)
     {
-        // 🔊 Real-time broadcast
+        // ✅ AUTHORITATIVE SERVER TIMESTAMP (seconds)
+        transform.serverTime =
+            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000f;
+
+        // 🔊 Real-time broadcast (others only — good)
         await hub.Clients.OthersInGroup(farmIdStr)
-            .SendAsync("PlayerTransformationUpdated", playerId, transform);
+            .SendAsync(
+                "PlayerTransformationUpdated",
+                playerId,
+                transform
+            );
 
         if (!int.TryParse(farmIdStr, out int farmId))
             return;
@@ -36,11 +44,12 @@ public class PlayerTransformationService
 
         LastSave[playerId] = now;
 
-        // 💾 Persist via DB communicator
+        // 💾 Persist (same timestamp is fine)
         await dbCommunicator
             .UpdateVisitorTransformationAsync(
                 farmId,
                 playerId,
-                transform);
+                transform
+            );
     }
 }

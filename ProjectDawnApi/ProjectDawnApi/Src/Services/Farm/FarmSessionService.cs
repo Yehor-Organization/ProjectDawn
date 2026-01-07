@@ -72,6 +72,7 @@ public class FarmSessionService
         await hub.Clients.Caller
             .SendAsync("InitialPlayers", others);
 
+
         await hub.Clients.OthersInGroup(farmIdStr)
             .SendAsync("PlayerJoined", playerId);
 

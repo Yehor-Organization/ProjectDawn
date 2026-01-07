@@ -16,7 +16,6 @@ public class LocalPlayerController : MonoBehaviour
     public float rotateSpeed = 200f;
     public float rotationUpdateThreshold = 1f;
 
-    // 🔗 Dependencies (resolved once)
     private CameraManager cameraManager;
 
     private Vector3 currentVelocity;
@@ -36,19 +35,40 @@ public class LocalPlayerController : MonoBehaviour
 
     private Rigidbody rb;
     [Range(0.01f, 1f)][SerializeField] private float rotationInertia = 0.15f;
+
     private float rotationVelocity;
+    private bool sending;
     [SerializeField] private float sendInterval = 0.1f;
+    // --------------------
+    // UNITY LIFECYCLE
+    // --------------------
 
     public void Initialize(
+        Vector3 spawnPos,
         float moveSpeed,
         float rotateSpeed,
         float posThreshold,
         float rotThreshold)
     {
+        transform.position = spawnPos;
+
         this.moveSpeed = moveSpeed;
         this.rotateSpeed = rotateSpeed;
         positionUpdateThreshold = posThreshold;
         rotationUpdateThreshold = rotThreshold;
+
+        lastPosition = transform.position;
+        lastRotation = transform.rotation.eulerAngles;
+        lastSendTime = Time.time;
+    }
+
+    public void Initialize(Vector3 spawnPos)
+    {
+        transform.position = spawnPos;
+
+        lastPosition = transform.position;
+        lastRotation = transform.rotation.eulerAngles;
+        lastSendTime = Time.time;
     }
 
     private void ApplyMovement(Vector3 moveDir)
@@ -73,11 +93,13 @@ public class LocalPlayerController : MonoBehaviour
         }
 
         float targetAngle = Mathf.Atan2(moveDir.x, moveDir.z) * Mathf.Rad2Deg;
+
         float angle = Mathf.SmoothDampAngle(
             rb.rotation.eulerAngles.y,
             targetAngle,
             ref rotationVelocity,
-            rotationInertia);
+            rotationInertia
+        );
 
         rb.MoveRotation(Quaternion.Euler(0, angle, 0));
     }
@@ -87,7 +109,12 @@ public class LocalPlayerController : MonoBehaviour
         Vector3 target = moveDir * moveSpeed;
         target.y = rb.linearVelocity.y;
 
-        currentVelocity = Vector3.Lerp(rb.linearVelocity, target, movementInertia);
+        currentVelocity = Vector3.Lerp(
+            rb.linearVelocity,
+            target,
+            movementInertia
+        );
+
         rb.linearVelocity = currentVelocity;
     }
 
@@ -95,29 +122,36 @@ public class LocalPlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
 
-        var managers = Core.Instance.Managers;
-        var api = Core.Instance.ApiCommunicators;
-
-        cameraManager = managers.CameraManager;
-        movementCommunicator = api.PlayerMovement;
-
-        joystick = FindObjectOfType<FixedJoystick>(); // UI-scoped, acceptable
+        cameraManager = Core.Instance.Managers.CameraManager;
+        movementCommunicator = Core.Instance.ApiCommunicators.PlayerMovement;
+        joystick = FindObjectOfType<FixedJoystick>();
 
         if (movementCommunicator == null)
             Debug.LogError("[LocalPlayerController] PlayerMovementCommunicator missing");
     }
 
-    private async void FixedUpdate()
+    private void FixedUpdate()
     {
+        // 🔒 CRITICAL: do NOTHING when unfocused
+        if (!Application.isFocused)
+            return;
+
         Vector3 moveDir = GetMoveDirection();
         ApplyMovement(moveDir);
-        await TrySendNetworkUpdate();
+
+        // Networking only while focused
+        _ = TrySendNetworkUpdate();
     }
 
     private Vector3 GetMoveDirection()
     {
+        // 🔒 Never read Input System when unfocused
+        if (!Application.isFocused)
+            return Vector3.zero;
+
         Camera cam = cameraManager != null ? cameraManager.GetCamera() : Camera.main;
-        if (cam == null) return Vector3.zero;
+        if (cam == null)
+            return Vector3.zero;
 
         Vector3 forward = cam.transform.forward;
         Vector3 right = cam.transform.right;
@@ -127,8 +161,8 @@ public class LocalPlayerController : MonoBehaviour
         right.Normalize();
 
         Vector3 dir = Vector3.zero;
-        var kb = Keyboard.current;
 
+        var kb = Keyboard.current;
         if (kb != null)
         {
             if (kb.wKey.isPressed) dir += forward;
@@ -138,9 +172,11 @@ public class LocalPlayerController : MonoBehaviour
         }
 
         if (joystick != null && joystick.Direction.magnitude > 0.1f)
+        {
             dir = (forward * joystick.Vertical) + (right * joystick.Horizontal);
+        }
 
-        return dir.sqrMagnitude > 1 ? dir.normalized : dir;
+        return dir.sqrMagnitude > 1f ? dir.normalized : dir;
     }
 
     private void Start()
@@ -154,30 +190,63 @@ public class LocalPlayerController : MonoBehaviour
         lastSendTime = Time.time;
     }
 
+    // --------------------
+    // MOVEMENT
+    // --------------------
+    // --------------------
+    // NETWORKING (ASYNC)
+    // --------------------
+
     private async Task TrySendNetworkUpdate()
     {
-        if (movementCommunicator == null) return;
-        if (Time.time - lastSendTime < sendInterval) return;
+        if (!Application.isFocused)
+            return;
 
-        bool moved = Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold;
-        bool rotated = Vector3.Distance(transform.rotation.eulerAngles, lastRotation) > rotationUpdateThreshold;
+        if (sending)
+            return;
 
-        if (!moved && !rotated) return;
+        if (movementCommunicator == null)
+            return;
 
-        lastSendTime = Time.time;
-        lastPosition = transform.position;
-        lastRotation = transform.rotation.eulerAngles;
+        if (Time.time - lastSendTime < sendInterval)
+            return;
 
-        var t = new TransformationDC
+        bool moved =
+            Vector3.Distance(transform.position, lastPosition) > positionUpdateThreshold;
+
+        bool rotated =
+            Vector3.Distance(transform.rotation.eulerAngles, lastRotation) > rotationUpdateThreshold;
+
+        if (!moved && !rotated)
+            return;
+
+        sending = true;
+
+        try
         {
-            positionX = transform.position.x,
-            positionY = transform.position.y,
-            positionZ = transform.position.z,
-            rotationX = transform.rotation.eulerAngles.x,
-            rotationY = transform.rotation.eulerAngles.y,
-            rotationZ = transform.rotation.eulerAngles.z
-        };
+            lastSendTime = Time.time;
+            lastPosition = transform.position;
+            lastRotation = transform.rotation.eulerAngles;
 
-        await movementCommunicator.SendTransformation(t);
+            var t = new TransformationDC
+            {
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                positionZ = transform.position.z,
+                rotationX = transform.rotation.eulerAngles.x,
+                rotationY = transform.rotation.eulerAngles.y,
+                rotationZ = transform.rotation.eulerAngles.z
+            };
+
+            await movementCommunicator.SendTransformation(t);
+        }
+        finally
+        {
+            sending = false;
+        }
     }
+
+    // --------------------
+    // INITIALIZATION API
+    // --------------------
 }

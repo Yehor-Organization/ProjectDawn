@@ -4,14 +4,15 @@ using UnityEngine.InputSystem;
 
 public class UIManager : MonoBehaviour
 {
+    private UIState currentState;
+
+    [SerializeField] private GameObject gameUI;
+
     [Header("Screens")]
     [SerializeField] private GameObject loginMenuUI;
 
     [SerializeField] private GameObject menuUI;
-    [SerializeField] private GameObject gameUI;
     [SerializeField] private GameObject profileMenuUI;
-
-    private UIState currentState;
 
     private enum UIState
     {
@@ -19,6 +20,12 @@ public class UIManager : MonoBehaviour
         Menu,
         Game,
         Profile
+    }
+
+    public void ShowGameUI()
+    {
+        Debug.Log("[UIManager] ShowGameUI");
+        SetState(UIState.Game);
     }
 
     // =====================
@@ -36,12 +43,6 @@ public class UIManager : MonoBehaviour
         SetState(UIState.Menu);
     }
 
-    public void ShowGameUI()
-    {
-        Debug.Log("[UIManager] ShowGameUI");
-        SetState(UIState.Game);
-    }
-
     public void ToggleMenu()
     {
         if (currentState == UIState.Menu)
@@ -56,8 +57,23 @@ public class UIManager : MonoBehaviour
             profileMenuUI.SetActive(!profileMenuUI.activeSelf);
     }
 
+    private void SetState(UIState state)
+    {
+        currentState = state;
+
+        loginMenuUI.SetActive(state == UIState.Login);
+        menuUI.SetActive(state == UIState.Menu);
+        gameUI.SetActive(state == UIState.Game);
+        profileMenuUI.SetActive(state == UIState.Profile);
+
+        Debug.Log($"[UIManager] UI State → {state}");
+    }
+
     private void Update()
     {
+        if (!Application.isFocused)
+            return;
+
         if (currentState == UIState.Login)
             return;
 
@@ -70,16 +86,4 @@ public class UIManager : MonoBehaviour
     // =====================
     // INTERNAL
     // =====================
-
-    private void SetState(UIState state)
-    {
-        currentState = state;
-
-        loginMenuUI.SetActive(state == UIState.Login);
-        menuUI.SetActive(state == UIState.Menu);
-        gameUI.SetActive(state == UIState.Game);
-        profileMenuUI.SetActive(state == UIState.Profile);
-
-        Debug.Log($"[UIManager] UI State → {state}");
-    }
 }

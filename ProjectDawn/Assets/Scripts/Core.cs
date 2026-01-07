@@ -5,25 +5,29 @@ public class Core : MonoBehaviour
 {
     [Header("Containers")]
     public ApiCommunicators ApiCommunicators;
+
     public Managers Managers;
     public Services Services;
+
+    private static TaskCompletionSource<Core> readyTcs =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     [Header("Config")]
     [SerializeField] private AppConfig appConfig;
 
+    private float last;
     public static Core Instance { get; private set; }
 
     // =========================
     // READINESS
     // =========================
-
-    private static TaskCompletionSource<Core> readyTcs =
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
-
     public static Task<Core> WhenReady => readyTcs.Task;
 
     private void Awake()
     {
+        // 🔥 CRITICAL: prevent focus-loss freezes
+        Application.runInBackground = true;
+
         if (Instance != null)
         {
             Destroy(gameObject);
@@ -49,6 +53,17 @@ public class Core : MonoBehaviour
 
         Config.APIBaseUrl = appConfig.APIBaseUrl.TrimEnd('/');
         Debug.Log($"[Core] APIBaseUrl initialized: {Config.APIBaseUrl}");
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        Debug.Log($"[Core] Application focus: {hasFocus}");
+    }
+
+    private void Update()
+    {
+        if (!Application.isFocused)
+            Debug.Log("[Core] Update running while unfocused");
     }
 
     private void Validate()

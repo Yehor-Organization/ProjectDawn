@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -9,7 +10,6 @@ public abstract class APIClientBase : MonoBehaviour
 {
     private AuthService authService;
 
-    // 🔹 Lazy resolver (NO Awake dependency)
     protected AuthService Auth
     {
         get
@@ -19,56 +19,41 @@ public abstract class APIClientBase : MonoBehaviour
                 authService = Core.Instance?.Services?.AuthService;
 
                 if (RequiresAuthService && authService == null)
-                {
                     throw new InvalidOperationException(
-                        $"[{GetType().Name}] AuthService not available. " +
-                        $"Core.Services.AuthService is not ready.");
-                }
+                        $"[{GetType().Name}] AuthService not available.");
             }
 
             return authService;
         }
     }
 
-    /// <summary>
-    /// Override to disable auth for public endpoints
-    /// </summary>
     protected virtual bool RequiresAuthService => true;
 
-    // -----------------------
-    // DELETE
-    // -----------------------
     protected Task Delete(string path, bool requiresAuth = true)
-    {
-        return Send<object>("DELETE", path, null, requiresAuth);
-    }
+        => Send<object>("DELETE", path, null, requiresAuth);
 
-    // -----------------------
-    // GET
-    // -----------------------
     protected Task<T> Get<T>(string path, bool requiresAuth = true)
-    {
-        return Send<T>("GET", path, null, requiresAuth);
-    }
+        => Send<T>("GET", path, null, requiresAuth);
 
-    // -----------------------
-    // POST
-    // -----------------------
     protected Task<T> Post<T>(string path, object body, bool requiresAuth = true)
-    {
-        return Send<T>("POST", path, body, requiresAuth);
-    }
+        => Send<T>("POST", path, body, requiresAuth);
 
-    // -----------------------
-    // PUT
-    // -----------------------
     protected Task<T> Put<T>(string path, object body, bool requiresAuth = true)
+        => Send<T>("PUT", path, body, requiresAuth);
+
+    private static async Task WaitWithTimeout(
+            Task task,
+            int seconds,
+            string error)
     {
-        return Send<T>("PUT", path, body, requiresAuth);
+        if (await Task.WhenAny(task, Task.Delay(seconds * 1000)) != task)
+            throw new TimeoutException(error);
+
+        await task;
     }
 
     // -----------------------
-    // CORE REQUEST (FIXED)
+    // CORE REQUEST (UNITY SAFE)
     // -----------------------
     private async Task<T> Send<T>(
         string method,
@@ -76,8 +61,9 @@ public abstract class APIClientBase : MonoBehaviour
         object body,
         bool requiresAuth)
     {
-        var url = $"{Config.APIBaseUrl}{path}";
+        Debug.Log($"[API] {method} {path} START");
 
+        var url = $"{Config.APIBaseUrl}{path}";
         using var req = new UnityWebRequest(url, method);
         req.downloadHandler = new DownloadHandlerBuffer();
 
@@ -88,43 +74,42 @@ public abstract class APIClientBase : MonoBehaviour
             req.SetRequestHeader("Content-Type", "application/json");
         }
 
-        // 🔐 AUTH GATE (THIS IS THE FIX)
         if (requiresAuth)
         {
-            // ⛔ DO NOT THROW — WAIT
-            await Auth.WaitUntilLoggedInAsync();
-
             var token = await Auth.GetValidAccessToken();
             if (string.IsNullOrEmpty(token))
-            {
-                Debug.LogError(
-                    $"[{GetType().Name}] Auth token still missing after login."
-                );
-                throw new UnauthorizedAccessException("No valid auth token");
-            }
+                throw new UnauthorizedAccessException("User not logged in");
 
             req.SetRequestHeader("Authorization", $"Bearer {token}");
         }
 
-        await req.SendWebRequest();
+        // ✅ Unity-safe await
+        Debug.Log("[API] SENDWEBREQUEST START");
+        await req.SendWebRequest().ToTask();
+        Debug.Log("[API] SENDWEBREQUEST END");
 
         if (req.result != UnityWebRequest.Result.Success)
         {
             Debug.LogError(
-                $"[APIClientBase] HTTP {method} {path} failed\n" +
+                $"[API ERROR] {method} {path}\n" +
                 $"Status: {req.responseCode}\n" +
                 $"Error: {req.error}\n" +
-                $"Response: {req.downloadHandler.text}"
-            );
+                $"Response: {req.downloadHandler.text}");
 
-            throw new Exception(
-                $"HTTP {method} {path} failed: {req.responseCode} - {req.error}");
+            throw new Exception($"HTTP {req.responseCode}: {req.error}");
         }
 
         if (typeof(T) == typeof(object) ||
             string.IsNullOrEmpty(req.downloadHandler.text))
             return default;
 
-        return JsonConvert.DeserializeObject<T>(req.downloadHandler.text);
+        Debug.Log("JSON DESERIALIZE START");
+        var result = JsonConvert.DeserializeObject<T>(req.downloadHandler.text);
+        Debug.Log("JSON DESERIALIZE END");
+        return result;
     }
+
+    // -----------------------
+    // HELPERS
+    // -----------------------
 }

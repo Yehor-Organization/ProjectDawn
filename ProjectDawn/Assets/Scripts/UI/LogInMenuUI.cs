@@ -10,59 +10,99 @@ public class LogInMenuUI : MonoBehaviour
     // Input Fields
     // =====================
 
-    [Header("Input Fields")]
-    [SerializeField] private TMP_InputField usernameInput;
+    private AuthService authService;
 
-    [SerializeField] private TMP_InputField passwordInput;
     [SerializeField] private TMP_InputField confirmPasswordInput;
 
-    // =====================
-    // Buttons
-    // =====================
-
-    [Header("Buttons")]
-    [SerializeField] private Button loginButton;
-
-    [SerializeField] private Button switchButton;
-
-    // =====================
-    // Text
-    // =====================
-
-    [Header("Text")]
-    [SerializeField] private TMP_Text title;
-
-    [SerializeField] private TMP_Text loginButtonText;
-    [SerializeField] private TMP_Text switchText;
-    [SerializeField] private TMP_Text switchButtonText;
     [SerializeField] private TMP_Text errorText;
+
+    private bool isBusy;
 
     // =====================
     // Internal state
     // =====================
-
-    private bool isBusy;
     private bool isRegister;
-    private AuthService authService;
 
+    [Header("Buttons")]
+    [SerializeField] private Button loginButton;
 
+    [SerializeField] private TMP_Text loginButtonText;
+
+    [SerializeField] private TMP_InputField passwordInput;
+
+    // =====================
+    // Buttons
+    // =====================
+    [SerializeField] private Button switchButton;
+
+    [SerializeField] private TMP_Text switchButtonText;
+
+    [SerializeField] private TMP_Text switchText;
+
+    [Header("Text")]
+    [SerializeField] private TMP_Text title;
+
+    [Header("Input Fields")]
+    [SerializeField] private TMP_InputField usernameInput;
+
+    // =====================
+    // Text
+    // =====================
     // =====================
     // Unity lifecycle
     // =====================
 
-    private async void Awake()
+    private void ApplyState()
+    {
+        confirmPasswordInput.gameObject.SetActive(isRegister);
+
+        title.text = isRegister ? "Register" : "Login";
+        loginButtonText.text = isRegister ? "Register" : "Log In";
+
+        switchText.text = isRegister
+            ? "Already have an account?"
+            : "Don't have an account?";
+
+        switchButtonText.text = isRegister
+            ? "Login"
+            : "Register";
+    }
+
+    private void Awake()
     {
         errorText.text = "";
         ApplyState();
 
         switchButton.onClick.AddListener(ToggleMode);
-        loginButton.onClick.AddListener(OnSubmit);
+        loginButton.onClick.AddListener(() => _ = OnSubmitAsync());
 
-        Debug.Log("Start() — waiting for UIManager");
+        _ = AwakeAsync();
+    }
 
-        await EnsureAuthServiceAsync();
-        // 🔑 Trigger lazy auth initialization (UI handled by AuthService)
-        _ = authService.GetValidAccessToken();
+    private async Task AwakeAsync()
+    {
+        try
+        {
+            Debug.Log("[LoginUI] Waiting for AuthService");
+
+            await EnsureAuthServiceAsync();
+
+            // Warm up auth safely (no deadlock, no swallow)
+            _ = WarmupAuthAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+            errorText.text = ex.Message;
+            SetBusy(false);
+        }
+    }
+
+    private void ClearInputs()
+    {
+        usernameInput.text = "";
+        passwordInput.text = "";
+        confirmPasswordInput.text = "";
     }
 
     private async Task EnsureAuthServiceAsync()
@@ -73,11 +113,7 @@ public class LogInMenuUI : MonoBehaviour
         authService = await CoreWaitHelpers.WaitForServiceAsync(s => s.AuthService);
     }
 
-    // =====================
-    // UI behavior
-    // =====================
-
-    private async void OnSubmit()
+    private async Task OnSubmitAsync()
     {
         if (isBusy)
             return;
@@ -111,8 +147,7 @@ public class LogInMenuUI : MonoBehaviour
         }
         catch (Exception ex)
         {
-            // ❗ AuthService already handled UI state
-            // We only show local error
+            Debug.LogException(ex);
             errorText.text = ex.Message;
         }
         finally
@@ -121,6 +156,19 @@ public class LogInMenuUI : MonoBehaviour
         }
     }
 
+    // =====================
+    // Helpers
+    // =====================
+    private void SetBusy(bool busy)
+    {
+        isBusy = busy;
+        loginButton.interactable = !busy;
+        switchButton.interactable = !busy;
+    }
+
+    // =====================
+    // UI behavior
+    // =====================
     private void ToggleMode()
     {
         if (isBusy)
@@ -132,37 +180,18 @@ public class LogInMenuUI : MonoBehaviour
         errorText.text = "";
     }
 
-    private void ApplyState()
+    private async Task WarmupAuthAsync()
     {
-        confirmPasswordInput.gameObject.SetActive(isRegister);
-
-        title.text = isRegister ? "Register" : "Login";
-        loginButtonText.text = isRegister ? "Register" : "Log In";
-
-        switchText.text = isRegister
-            ? "Already have an account?"
-            : "Don't have an account?";
-
-        switchButtonText.text = isRegister
-            ? "Login"
-            : "Register";
-    }
-
-    // =====================
-    // Helpers
-    // =====================
-
-    private void ClearInputs()
-    {
-        usernameInput.text = "";
-        passwordInput.text = "";
-        confirmPasswordInput.text = "";
-    }
-
-    private void SetBusy(bool busy)
-    {
-        isBusy = busy;
-        loginButton.interactable = !busy;
-        switchButton.interactable = !busy;
+        try
+        {
+            await authService.GetValidAccessToken();
+            Debug.Log("[LoginUI] Auth warmup complete");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+            // Optional: show non-fatal message
+            // errorText.text = "Authentication unavailable.";
+        }
     }
 }

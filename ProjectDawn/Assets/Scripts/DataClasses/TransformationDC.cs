@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [System.Serializable]
 public class TransformationDC
@@ -6,37 +6,35 @@ public class TransformationDC
     public float positionX { get; set; }
     public float positionY { get; set; }
     public float positionZ { get; set; }
+
     public float rotationX { get; set; }
     public float rotationY { get; set; }
     public float rotationZ { get; set; }
 
-    // Core factory: takes optional position and rotation
-    public static TransformationDC FromVectors(Vector3? position = null, Vector3? rotation = null)
+    // ✅ CRITICAL
+    public float serverTime { get; set; }
+
+    // Core factory
+    public static TransformationDC FromVectors(
+        Vector3? position = null,
+        Vector3? rotation = null,
+        float serverTime = 0f)
     {
-        var dc = new TransformationDC();
-
-        if (position.HasValue)
+        return new TransformationDC
         {
-            dc.positionX = position.Value.x;
-            dc.positionY = position.Value.y;
-            dc.positionZ = position.Value.z;
-        }
-
-        if (rotation.HasValue)
-        {
-            dc.rotationX = rotation.Value.x;
-            dc.rotationY = rotation.Value.y;
-            dc.rotationZ = rotation.Value.z;
-        }
-
-        return dc;
+            positionX = position?.x ?? 0f,
+            positionY = position?.y ?? 0f,
+            positionZ = position?.z ?? 0f,
+            rotationX = rotation?.x ?? 0f,
+            rotationY = rotation?.y ?? 0f,
+            rotationZ = rotation?.z ?? 0f,
+            serverTime = serverTime
+        };
     }
 
-    // Convenience wrappers
-    public static TransformationDC FromPosition(Vector3 position) => FromVectors(position, null);
-    public static TransformationDC FromRotation(Vector3 rotation) => FromVectors(null, rotation);
+    public Vector3 ToPosition()
+        => new(positionX, positionY, positionZ);
 
-    // Back to Unity types
-    public Vector3 ToPosition() => new Vector3(positionX, positionY, positionZ);
-    public Quaternion ToRotation() => Quaternion.Euler(rotationX, rotationY, rotationZ);
+    public Quaternion ToRotation()
+        => Quaternion.Euler(rotationX, rotationY, rotationZ);
 }

@@ -1,15 +1,31 @@
 ﻿using UnityEngine;
 using System;
+using System.Collections;
 using System.Threading.Tasks;
 
 public class FarmListUI : MonoBehaviour
 {
+    private AuthService authService;
+
+    private bool bootstrapped;
+
+    [Header("UI")]
     [SerializeField] private RectTransform farmListContainer;
+
     [SerializeField] private GameObject farmListItemPrefab;
+
     private GameManager gameManager;
+    // =====================
+    // DEPENDENCIES
+    // =====================
+
+    private AuthService Auth =>
+        authService ??= Core.Instance?.Services?.AuthService
+        ?? throw new InvalidOperationException(
+            "[FarmListUI] AuthService not available");
 
     private FarmAPICommunicator FarmApi =>
-        Core.Instance?.ApiCommunicators?.FarmApi;
+            Core.Instance?.ApiCommunicators?.FarmApi;
 
     private FarmHubCommunicator FarmHub =>
         Core.Instance?.ApiCommunicators?.FarmHub;
@@ -19,47 +35,93 @@ public class FarmListUI : MonoBehaviour
         ?? throw new InvalidOperationException(
             "[FarmListUI] GameManager missing");
 
-    private async void HandleFarmListUpdated()
+    // =====================
+    // UNITY
+    // =====================
+
+    private async Task BootstrapAsync()
     {
+        // 1️⃣ Wait for core systems
+        while (FarmApi == null || FarmHub == null)
+            await Task.Yield();
+
+        // 2️⃣ Wait for authentication
+        await Auth.WaitUntilLoggedInAsync();
+
+        // 3️⃣ Initial load
         await PopulateFarmListAsync();
+
+        // 4️⃣ Safe subscription (idempotent)
+        FarmHub.OnFarmListUpdated -= HandleFarmListUpdated;
+        FarmHub.OnFarmListUpdated += HandleFarmListUpdated;
+    }
+
+    private IEnumerator BootstrapNextFrame()
+    {
+        // Let UI render and Unity stabilize
+        yield return null;
+
+        _ = BootstrapAsync();
+    }
+
+    private void HandleFarmListUpdated()
+    {
+        PopulateFarmListAsync();
     }
 
     private void OnDisable()
     {
         if (FarmHub != null)
             FarmHub.OnFarmListUpdated -= HandleFarmListUpdated;
+
+        bootstrapped = false;
     }
 
-    private async void OnEnable()
+    private void OnEnable()
     {
-        while (FarmApi == null || FarmHub == null)
-            await Task.Yield();
+        // Prevent double bootstrap when menu toggles
+        if (bootstrapped)
+            return;
 
-        await PopulateFarmListAsync();
-        FarmHub.OnFarmListUpdated += HandleFarmListUpdated;
+        bootstrapped = true;
+
+        // Delay heavy work until AFTER the frame finishes
+        StartCoroutine(BootstrapNextFrame());
     }
+
+    // =====================
+    // BOOTSTRAP
+    // =====================
+    // =====================
+    // EVENTS
+    // =====================
+    // =====================
+    // DATA
+    // =====================
 
     private async Task PopulateFarmListAsync()
     {
-        if (FarmApi == null || farmListContainer == null)
+        if (farmListContainer == null || FarmApi == null)
             return;
 
         var farms = await FarmApi.GetAllFarms();
         if (farms == null)
             return;
 
-        foreach (Transform child in farmListContainer)
-            Destroy(child.gameObject);
+        Debug.Log($"FARMS COUNT = {farms.Count}");
 
+        Debug.Log("CLEAR UI START");
+        for (int i = farmListContainer.childCount - 1; i >= 0; i--)
+            Destroy(farmListContainer.GetChild(i).gameObject);
+        Debug.Log("CLEAR UI END");
+
+        Debug.Log("INSTANTIATE START");
         foreach (var farm in farms)
         {
-            var item = Instantiate(
-                farmListItemPrefab,
-                farmListContainer
-            );
-
+            var item = Instantiate(farmListItemPrefab, farmListContainer);
             var ui = item.GetComponent<FarmListItemUI>();
             ui?.Setup(farm, GameManager, this);
         }
+        Debug.Log("INSTANTIATE END");
     }
 }

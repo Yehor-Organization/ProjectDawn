@@ -92,6 +92,15 @@ public class PlayerManager : MonoBehaviour
         remotePlayers.Remove(playerId);
     }
 
+    public void SpawnLocalPlayer()
+    {
+        int myPlayerId = GetLocalPlayerId();
+
+        Debug.Log($"[PlayerManager] Spawning LOCAL player (self) {myPlayerId}");
+
+        SpawnPlayer(myPlayerId, isLocalPlayer: true);
+    }
+
     public void SpawnPlayer(int playerId, bool isLocalPlayer)
     {
         Vector3 spawnPos = defaultSpawnPoint ? defaultSpawnPoint.position : Vector3.zero;
@@ -123,10 +132,11 @@ public class PlayerManager : MonoBehaviour
             }
 
             localCtrl.Initialize(
-                defaultMoveSpeed,
-                defaultRotateSpeed,
-                positionUpdateThreshold,
-                rotationUpdateThreshold
+                spawnPos,
+                localCtrl.moveSpeed,
+                localCtrl.rotateSpeed,
+                localCtrl.positionUpdateThreshold,
+                localCtrl.rotationUpdateThreshold
             );
 
             CameraManager.ResetCamera(localCtrl);
@@ -153,20 +163,14 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    public void SpawnLocalPlayer()
-    {
-        int myPlayerId = GetLocalPlayerId();
-
-        Debug.Log($"[PlayerManager] Spawning LOCAL player (self) {myPlayerId}");
-
-        SpawnPlayer(myPlayerId, isLocalPlayer: true);
-    }
-
     public void UpdatePlayerTransformation(int playerId, TransformationDC newTransformation)
     {
+        // 🔑 Spawn on first transform
         if (!remotePlayers.TryGetValue(playerId, out var playerObj))
         {
-            Debug.LogWarning($"[PlayerManager] Player {playerId} not found");
+            Debug.Log($"[PlayerManager] Spawning REMOTE player {playerId} from transform");
+
+            SpawnRemotePlayerAtTransform(playerId, newTransformation);
             return;
         }
 
@@ -188,5 +192,26 @@ public class PlayerManager : MonoBehaviour
         var payload = JWTUtils.Decode(token);
 
         return payload.PlayerId; // or payload.Sub
+    }
+
+    private void SpawnRemotePlayerAtTransform(
+        int playerId,
+    TransformationDC transform)
+    {
+        if (remotePlayerPrefab == null)
+        {
+            Debug.LogError("[PlayerManager] Remote player prefab not assigned");
+            return;
+        }
+
+        Vector3 pos = transform.ToPosition();
+        Quaternion rot = transform.ToRotation();
+
+        var playerGO = Instantiate(remotePlayerPrefab, pos, rot);
+
+        var remoteCtrl = playerGO.GetComponent<RemotePlayerController>();
+        remoteCtrl?.Initialize(defaultMoveSpeed, defaultRotateSpeed);
+
+        remotePlayers.Add(playerId, playerGO);
     }
 }

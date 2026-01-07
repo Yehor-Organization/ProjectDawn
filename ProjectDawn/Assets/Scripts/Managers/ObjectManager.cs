@@ -48,6 +48,17 @@ public class ObjectManager : MonoBehaviour
         placedObjects[objectId] = obj;
     }
 
+    public void RemoveObject(Guid objectId)
+    {
+        if (!placedObjects.TryGetValue(objectId, out var obj))
+            return;
+
+        if (obj != null)
+            Destroy(obj);
+
+        placedObjects.Remove(objectId);
+    }
+
     private void Awake()
     {
         if (Instance == null) Instance = this;

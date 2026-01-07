@@ -52,12 +52,19 @@ public class FarmSessionDBCommunicator
     // =========================================================
     // GET OTHER PLAYERS IN FARM
     // =========================================================
-    public Task<List<int>> GetOtherPlayersAsync(int farmId, int playerId)
+    public Task<List<InitialPlayerDTO>> GetOtherPlayersAsync(
+        int farmId,
+        int playerId)
         => db.FarmVisitors
+            .AsNoTracking() // ✅ KEY FIX
             .Where(v => v.FarmId == farmId && v.PlayerId != playerId)
-            .Select(v => v.PlayerId)
-            .Distinct()
+            .Select(v => new InitialPlayerDTO
+            {
+                PlayerId = v.PlayerId,
+                Transformation = v.Transformation
+            })
             .ToListAsync();
+
 
     // =========================================================
     // REMOVE BY CONNECTION (DISCONNECT)
