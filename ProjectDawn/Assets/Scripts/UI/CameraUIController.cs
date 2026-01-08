@@ -1,13 +1,45 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 public class CameraUIController : MonoBehaviour
 {
+    private CameraManager cameraManager;
+
     [Header("UI Buttons")]
     [SerializeField] private Button rotateLeftButton;
+
     [SerializeField] private Button rotateRightButton;
 
-    void Awake()
+    // -----------------------
+    // Lazy dependency
+    // -----------------------
+    private CameraManager CameraManager
+    {
+        get
+        {
+            if (cameraManager == null)
+                cameraManager = Core.Instance?.Managers?.CameraManager;
+
+            if (cameraManager == null)
+                throw new InvalidOperationException(
+                    "[CameraUIController] CameraManager not available");
+
+            return cameraManager;
+        }
+    }
+
+    public void OnRotateLeftButton()
+    {
+        CameraManager.RotateAroundPlayerLeft();
+    }
+
+    public void OnRotateRightButton()
+    {
+        CameraManager.RotateAroundPlayerRight();
+    }
+
+    private void Awake()
     {
         if (rotateLeftButton != null)
             rotateLeftButton.onClick.AddListener(OnRotateLeftButton);
@@ -16,21 +48,8 @@ public class CameraUIController : MonoBehaviour
             rotateRightButton.onClick.AddListener(OnRotateRightButton);
     }
 
-    public void OnRotateLeftButton()
+    private void OnDestroy()
     {
-        if (CameraManager.Instance != null)
-            CameraManager.Instance.RotateAroundPlayerLeft();
-    }
-
-    public void OnRotateRightButton()
-    {
-        if (CameraManager.Instance != null)
-            CameraManager.Instance.RotateAroundPlayerRight();
-    }
-
-    void OnDestroy()
-    {
-        // ✅ Clean up listeners to prevent memory leaks
         if (rotateLeftButton != null)
             rotateLeftButton.onClick.RemoveListener(OnRotateLeftButton);
 

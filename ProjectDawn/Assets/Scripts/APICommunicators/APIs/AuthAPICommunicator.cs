@@ -10,7 +10,7 @@ public class AuthAPICommunicator : APIClientBase
     public Task<AuthTokens> Login(string username, string password)
     {
         return Post<AuthTokens>(
-            "/api/Players/login",
+            "/Players/Login",
             new PlayerDTO
             {
                 Username = username,
@@ -26,7 +26,7 @@ public class AuthAPICommunicator : APIClientBase
     public Task<AuthTokens> Refresh(string refreshToken)
     {
         return Post<AuthTokens>(
-            "/api/Players/refresh",
+            "/Players/Refresh",
             new RefreshTokenDTO
             {
                 RefreshToken = refreshToken
@@ -41,7 +41,7 @@ public class AuthAPICommunicator : APIClientBase
     public Task<AuthTokens> Register(string username, string password)
     {
         return Post<AuthTokens>(
-            "/api/Players/register",
+            "/Players/Register",
             new PlayerDTO
             {
                 Username = username,

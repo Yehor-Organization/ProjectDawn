@@ -16,38 +16,25 @@ public class AuthService : MonoBehaviour
     private const string LogTag = "[AuthService]";
     private const int RefreshEarlySeconds = 60;
     private readonly SemaphoreSlim initLock = new(1, 1);
-
     [SerializeField] private AuthAPICommunicator authApi;
 
     private Task initializationTask;
+
     private bool isInitialized;
+
     private CancellationTokenSource refreshCts;
+
     private Task<AuthTokens> refreshTask;
+
     private AuthTokens tokens;
-    // =========================
-    // UNITY MAIN THREAD CONTEXT
-    // =========================
 
     private UIManager uiManager;
+
     private SynchronizationContext unityContext;
 
-    // =========================
-    // CACHED UI MANAGER
-    // =========================
-    // =========================
-    // AUTH STATE
-    // =========================
-
     public bool IsLoggedIn =>
-        tokens != null && !IsExpiredSafe(tokens.AccessToken);
+            tokens != null && !IsExpiredSafe(tokens.AccessToken);
 
-    // =========================
-    // LOGGING
-    // =========================
-
-    /// <summary>
-    /// Returns a valid access token or null.
-    /// </summary>
     public async Task<string> GetValidAccessToken()
     {
         await EnsureInitializedAsync();

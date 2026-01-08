@@ -7,15 +7,6 @@ public class LocalPlayerController : MonoBehaviour
 {
     public bool instantRotation = false;
 
-    [Header("Movement")]
-    public float moveSpeed = 5f;
-
-    [Header("Networking")]
-    public float positionUpdateThreshold = 0.05f;
-
-    public float rotateSpeed = 200f;
-    public float rotationUpdateThreshold = 1f;
-
     private CameraManager cameraManager;
 
     private Vector3 currentVelocity;
@@ -33,9 +24,16 @@ public class LocalPlayerController : MonoBehaviour
     [Header("Momentum")]
     [Range(0.01f, 1f)][SerializeField] private float movementInertia = 0.1f;
 
-    private Rigidbody rb;
-    [Range(0.01f, 1f)][SerializeField] private float rotationInertia = 0.15f;
+    [Header("Movement")]
+    [SerializeField] private float moveSpeed;
 
+    [Header("Networking")]
+    [SerializeField] private float positionUpdateThreshold;
+
+    private Rigidbody rb;
+    [SerializeField] private float rotateSpeed;
+    [Range(0.01f, 1f)][SerializeField] private float rotationInertia = 0.15f;
+    [SerializeField] private float rotationUpdateThreshold;
     private float rotationVelocity;
     private bool sending;
     [SerializeField] private float sendInterval = 0.1f;
@@ -56,15 +54,6 @@ public class LocalPlayerController : MonoBehaviour
         this.rotateSpeed = rotateSpeed;
         positionUpdateThreshold = posThreshold;
         rotationUpdateThreshold = rotThreshold;
-
-        lastPosition = transform.position;
-        lastRotation = transform.rotation.eulerAngles;
-        lastSendTime = Time.time;
-    }
-
-    public void Initialize(Vector3 spawnPos)
-    {
-        transform.position = spawnPos;
 
         lastPosition = transform.position;
         lastRotation = transform.rotation.eulerAngles;

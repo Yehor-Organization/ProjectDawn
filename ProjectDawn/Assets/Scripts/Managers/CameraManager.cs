@@ -26,8 +26,6 @@ public class CameraManager : MonoBehaviour
     // current smoothed offset
     private Vector3 targetOffset;
 
-    public static CameraManager Instance { get; private set; }
-
     public Camera GetCamera() => mainCam;
 
     public void ResetCamera(LocalPlayerController ctrl)
@@ -60,11 +58,6 @@ public class CameraManager : MonoBehaviour
     // ✅ persistent flat XZ offset for orbiting
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-
-        DontDestroyOnLoad(gameObject);
-
         if (mainCam != null)
         {
             initialPosition = mainCam.transform.position;

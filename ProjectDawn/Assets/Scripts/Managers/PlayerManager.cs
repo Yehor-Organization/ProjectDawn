@@ -82,6 +82,21 @@ public class PlayerManager : MonoBehaviour
         remotePlayers.Clear();
     }
 
+    public int GetLocalPlayerID()
+    {
+        var auth = Core.Instance?.Services?.AuthService
+            ?? throw new InvalidOperationException(
+                "[PlayerManager] AuthService not available.");
+
+        var token = auth.GetValidAccessToken()
+            .GetAwaiter()
+            .GetResult();
+
+        var payload = JWTUtils.Decode(token);
+
+        return payload.PlayerId; // or payload.Sub
+    }
+
     public void RemovePlayer(int playerId)
     {
         if (!remotePlayers.TryGetValue(playerId, out var playerGO))
@@ -133,10 +148,10 @@ public class PlayerManager : MonoBehaviour
 
             localCtrl.Initialize(
                 spawnPos,
-                localCtrl.moveSpeed,
-                localCtrl.rotateSpeed,
-                localCtrl.positionUpdateThreshold,
-                localCtrl.rotationUpdateThreshold
+                defaultMoveSpeed,
+                defaultRotateSpeed,
+                positionUpdateThreshold,
+                rotationUpdateThreshold
             );
 
             CameraManager.ResetCamera(localCtrl);

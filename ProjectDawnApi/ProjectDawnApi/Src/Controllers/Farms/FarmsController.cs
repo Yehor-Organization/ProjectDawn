@@ -7,7 +7,7 @@ namespace ProjectDawnApi.Src.Controllers.Farms;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class FarmsController : ControllerBase
 {
     private readonly FarmCreationService farmCreationService;
@@ -15,7 +15,7 @@ public class FarmsController : ControllerBase
     private readonly FarmObjectService farmObjectService;
     private readonly FarmQueryService farmQueryService;
     private readonly FarmSessionService farmSessionService;
-    private readonly IHubContext<FarmHub> hubContext;
+    private readonly IHubContext<FarmListHub> hubContext;
 
     public FarmsController(
         FarmCreationService farmCreationService,
@@ -23,7 +23,7 @@ public class FarmsController : ControllerBase
         FarmQueryService farmQueryService,
         FarmObjectService farmObjectService,
         FarmSessionService farmSessionService,
-        IHubContext<FarmHub> hubContext)
+        IHubContext<FarmListHub> hubContext)
     {
         this.farmCreationService = farmCreationService;
         this.farmManagementService = farmManagementService;

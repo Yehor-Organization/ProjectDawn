@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: daccc7c0a958772409d72dca9893e4a2, type: 3}
   m_Name: App Config
   m_EditorClassIdentifier: Assembly-CSharp::AppConfig
-  APIBaseUrl: http://localhost:5044/
+  APIBaseUrl: http://localhost:5044

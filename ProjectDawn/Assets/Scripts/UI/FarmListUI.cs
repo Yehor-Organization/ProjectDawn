@@ -27,8 +27,8 @@ public class FarmListUI : MonoBehaviour
     private FarmAPICommunicator FarmApi =>
             Core.Instance?.ApiCommunicators?.FarmApi;
 
-    private FarmHubCommunicator FarmHub =>
-        Core.Instance?.ApiCommunicators?.FarmHub;
+    private FarmListHubCommunicator FarmListHub =>
+        Core.Instance?.ApiCommunicators?.FarmListHub;
 
     private GameManager GameManager =>
         gameManager ??= Core.Instance?.Managers?.GameManager
@@ -41,8 +41,7 @@ public class FarmListUI : MonoBehaviour
 
     private async Task BootstrapAsync()
     {
-        // 1️⃣ Wait for core systems
-        while (FarmApi == null || FarmHub == null)
+        while (FarmApi == null || FarmListHub == null)
             await Task.Yield();
 
         // 2️⃣ Wait for authentication
@@ -52,8 +51,8 @@ public class FarmListUI : MonoBehaviour
         await PopulateFarmListAsync();
 
         // 4️⃣ Safe subscription (idempotent)
-        FarmHub.OnFarmListUpdated -= HandleFarmListUpdated;
-        FarmHub.OnFarmListUpdated += HandleFarmListUpdated;
+        FarmListHub.OnFarmListUpdated -= HandleFarmListUpdated;
+        FarmListHub.OnFarmListUpdated += HandleFarmListUpdated;
     }
 
     private IEnumerator BootstrapNextFrame()
@@ -71,8 +70,8 @@ public class FarmListUI : MonoBehaviour
 
     private void OnDisable()
     {
-        if (FarmHub != null)
-            FarmHub.OnFarmListUpdated -= HandleFarmListUpdated;
+        if (FarmListHub != null)
+            FarmListHub.OnFarmListUpdated -= HandleFarmListUpdated;
 
         bootstrapped = false;
     }

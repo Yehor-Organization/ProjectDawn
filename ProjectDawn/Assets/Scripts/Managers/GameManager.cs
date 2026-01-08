@@ -7,6 +7,8 @@ public class GameManager : MonoBehaviour
     private FarmAPICommunicator farmApi;
     private FarmHubCommunicator farmHub;
 
+    private bool inFarm;
+    private bool joiningFarm;
     private ObjectManager objectManager;
     private PlayerManager playerManager;
     private UIManager uiManager;
@@ -92,44 +94,53 @@ public class GameManager : MonoBehaviour
 
     public async Task<bool> JoinFarm(string farmId)
     {
-        Debug.Log($"[GameManager] Joining farm {farmId}");
-
-        await LeaveFarm();
-
-        var state = await FarmApi.GetFarmState(farmId);
-        if (state == null)
+        if (joiningFarm)
         {
-            Debug.LogError("[GameManager] Failed to load farm state");
+            Debug.LogWarning("[GameManager] JoinFarm ignored (already joining)");
             return false;
         }
 
-        ClearFarm();
-        BuildFarmFromState(state);
+        joiningFarm = true;
 
-        if (!await FarmHub.Connect(farmId))
+        try
         {
-            Debug.LogError("[GameManager] Failed to connect to farm hub");
-            return false;
+            Debug.Log($"[GameManager] Joining farm {farmId}");
+
+            await LeaveFarm();
+
+            var state = await FarmApi.GetFarmState(farmId);
+            if (state == null)
+                return false;
+
+            ClearFarm();
+            BuildFarmFromState(state);
+
+            if (!await FarmHub.Connect(farmId))
+                return false;
+
+            inFarm = true;
+            UIManager?.ShowGameUI();
+
+            return true;
         }
-
-        Debug.Log("[GameManager] Joined farm successfully");
-
-        if (UIManager != null)
-            UIManager.ShowGameUI();
-        else
-            Debug.LogWarning("[GameManager] UIManager not ready yet (ShowGameUI skipped)");
-
-        return true;
+        finally
+        {
+            joiningFarm = false;
+        }
     }
 
     public async Task LeaveFarm()
     {
+        if (!inFarm && !joiningFarm)
+            return;
+
         Debug.Log("[GameManager] Leaving farm");
 
         if (FarmHub != null && FarmHub.IsConnectedPublic)
             await FarmHub.Disconnect();
 
         ClearFarm();
+        inFarm = false;
     }
 
     public async Task ResetToMenu()
@@ -160,8 +171,5 @@ public class GameManager : MonoBehaviour
 
         if (objectManager != null)
             objectManager.ClearAll();
-
-        if (playerManager != null)
-            playerManager.ClearAllPlayers();
     }
 }

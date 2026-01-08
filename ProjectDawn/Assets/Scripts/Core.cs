@@ -60,12 +60,6 @@ public class Core : MonoBehaviour
         Debug.Log($"[Core] Application focus: {hasFocus}");
     }
 
-    private void Update()
-    {
-        if (!Application.isFocused)
-            Debug.Log("[Core] Update running while unfocused");
-    }
-
     private void Validate()
     {
         if (Managers == null)

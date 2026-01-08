@@ -5,7 +5,7 @@ using System;
 namespace ProjectDawnApi.Src.Controllers.Players;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class PlayersController : ControllerBase
 {
     private readonly PlayerAuthService authService;

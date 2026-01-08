@@ -6,12 +6,15 @@ public class FarmSessionService
 {
     private readonly FarmSessionDBCommunicator dbCommunicator;
     private readonly ILogger<FarmSessionService> logger;
+    private readonly PlayerTransformationService transformService;
 
     public FarmSessionService(
         FarmSessionDBCommunicator dbCommunicator,
+        PlayerTransformationService transformService, // 👈 ADD THIS
         ILogger<FarmSessionService> logger)
     {
         this.dbCommunicator = dbCommunicator;
+        this.transformService = transformService;
         this.logger = logger;
     }
 
@@ -34,6 +37,9 @@ public class FarmSessionService
 
         if (visitor != null)
         {
+            // 🔑 NEW: Clean up transform cache
+            transformService.RemovePlayerTransform(visitor.FarmId, visitor.PlayerId);
+
             await hub.Clients.OthersInGroup(
                     visitor.FarmId.ToString())
                 .SendAsync("PlayerLeft", visitor.PlayerId);
@@ -66,13 +72,28 @@ public class FarmSessionService
         await dbCommunicator.AddVisitorAsync(
             farmId, playerId, hub.Context.ConnectionId);
 
+        // Get list of other player IDs
         var others = await dbCommunicator
             .GetOtherPlayersAsync(farmId, playerId);
 
+        // Send player IDs first
         await hub.Clients.Caller
             .SendAsync("InitialPlayers", others);
 
+        // 🔑 NEW: Send current positions of existing players
+        var playerStates = transformService.GetAllTransformsForFarm(farmId, playerId);
 
+        if (playerStates.Count > 0)
+        {
+            await hub.Clients.Caller
+                .SendAsync("InitialPlayerStates", playerStates);
+
+            logger.LogInformation(
+                "Sent {Count} initial player states to Player {PlayerId} in Farm {FarmId}",
+                playerStates.Count, playerId, farmId);
+        }
+
+        // Notify others about new player
         await hub.Clients.OthersInGroup(farmIdStr)
             .SendAsync("PlayerJoined", playerId);
 
@@ -88,6 +109,9 @@ public class FarmSessionService
     {
         if (!int.TryParse(farmIdStr, out int farmId))
             return;
+
+        // 🔑 NEW: Clean up transform cache
+        transformService.RemovePlayerTransform(farmId, playerId);
 
         await dbCommunicator.RemoveVisitorAsync(farmId, playerId);
 

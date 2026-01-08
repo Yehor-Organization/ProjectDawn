@@ -6,63 +6,38 @@ using UnityEngine;
 
 public class FarmHubCommunicator : HubClientBase
 {
-    // =======================
-    // Public events (UI hooks)
-    // =======================
-
     private string farmId;
-
-    private GameManager gameManager;
-
-    // =======================
-    // State
-    // =======================
     private bool handlersRegistered;
-
     private PlayerManager playerManager;
 
     public event Action<FarmInfoDTO> OnFarmJoined;
 
-    public event Action OnFarmListUpdated;
-
     public bool IsConnectedPublic => IsConnected;
 
-    // =======================
-    // Lazy managers
-    // =======================
-
     private PlayerManager PlayerManager =>
-        playerManager ??= Core.Instance?.Managers?.PlayerManager
-        ?? throw new InvalidOperationException(
-            "[FarmHubCommunicator] PlayerManager not available.");
+        playerManager ??= Core.Instance.Managers.PlayerManager
+        ?? throw new InvalidOperationException("PlayerManager not available");
 
     // =======================
-    // Connection lifecycle
+    // Connection
     // =======================
-
     public async Task<bool> Connect(string farmId)
     {
         this.farmId = farmId;
 
-        var baseUrl = Config.APIBaseUrl?.TrimEnd('/');
-        var hubUrl = $"{baseUrl}/farmHub";
+        // 1. Clear all players FIRST
+        MainThreadDispatcher.Enqueue(PlayerManager.ClearAllPlayers);
 
-        await CreateAndStartConnection(hubUrl);
-        RegisterHandlers();
-
-        // ✅ CLEAR FIRST
-        MainThreadDispatcher.Enqueue(() =>
-        {
-            PlayerManager.ClearAllPlayers();
-        });
-
-        // THEN join
+        // 2. Connect to hub and join farm
+        await StartConnectionAsync();
         await connection.InvokeAsync("JoinFarm", farmId);
 
-        // Spawn local AFTER join
+        // 3. ALWAYS spawn local player immediately after joining
+        // This ensures local player exists regardless of InitialPlayers event
         MainThreadDispatcher.Enqueue(() =>
         {
             PlayerManager.SpawnLocalPlayer();
+            Debug.Log("[FarmHub] Local player spawned after joining farm");
         });
 
         return true;
@@ -70,101 +45,166 @@ public class FarmHubCommunicator : HubClientBase
 
     public async Task Disconnect()
     {
-        if (!IsConnected)
+        if (connection == null || farmId == null)
+        {
+            Debug.Log("[FarmHub] Disconnect called but already disconnected");
             return;
+        }
+
+        Debug.Log($"[FarmHub] Disconnecting from farm {farmId}");
 
         var leavingFarm = farmId;
         farmId = null;
 
+        // Try to notify server we're leaving
         try
         {
-            await connection.InvokeAsync("LeaveFarm", leavingFarm);
+            if (IsConnected)
+            {
+                await connection.InvokeAsync("LeaveFarm", leavingFarm);
+            }
         }
-        catch { }
-
-        await StopConnection();
-
-        MainThreadDispatcher.Enqueue(() =>
+        catch (Exception ex)
         {
-            PlayerManager.ClearAllPlayers();
-        });
+            Debug.LogWarning($"[FarmHub] LeaveFarm failed: {ex.Message}");
+        }
+
+        // Stop the connection and wait for it to fully close
+        try
+        {
+            await StopConnectionAsync();
+            Debug.Log("[FarmHub] Connection stopped successfully");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[FarmHub] StopConnection failed: {ex.Message}");
+        }
+
+        // 🔑 Reset handler flag so they can be re-registered on next connect
+        handlersRegistered = false;
+
+        // Clear players on main thread
+        MainThreadDispatcher.Enqueue(PlayerManager.ClearAllPlayers);
     }
 
     // =======================
-    // Hub messaging (client → server)
+    // Sending
     // =======================
-
     public async Task SendTransformation(TransformationDC t)
     {
-        if (connection?.State != HubConnectionState.Connected || farmId == null)
+        if (!IsConnected || farmId == null)
             return;
 
-        await connection.SendAsync(
-            "UpdatePlayerTransformation",
-            farmId,
-            t
-        );
+        await connection.SendAsync("UpdatePlayerTransformation", farmId, t);
+    }
+
+    protected void Awake()
+    {
+        SetHubPath("FarmHub");
     }
 
     // =======================
-    // SignalR handlers
+    // Handlers
     // =======================
-
-    private void RegisterHandlers()
+    protected override void RegisterHandlers(HubConnection connection)
     {
         if (handlersRegistered)
             return;
 
         handlersRegistered = true;
 
-        // ---------- FARM LIST EVENTS ----------
-
-        connection.On("FarmListUpdated", () =>
-        {
-            if (farmId == null)
-                return;
-
-            Debug.Log("Farm list updated event received.");
-            MainThreadDispatcher.Enqueue(() =>
-            {
-                OnFarmListUpdated?.Invoke();
-            });
-        });
-
+        // -------- FARM JOINED --------
         connection.On<FarmInfoDTO>("FarmJoined", farm =>
         {
-            if (farmId == null || farm == null)
+            if (farm == null)
+                return;
+
+            MainThreadDispatcher.Enqueue(() =>
+                OnFarmJoined?.Invoke(farm));
+        });
+
+        // -------- INITIAL PLAYERS (Remote only) --------
+        connection.On<List<int>>("InitialPlayers", ids =>
+        {
+            if (farmId == null || ids == null)
                 return;
 
             MainThreadDispatcher.Enqueue(() =>
             {
-                OnFarmJoined?.Invoke(farm);
+                int localId = PlayerManager.GetLocalPlayerID();
+
+                Debug.Log($"[FarmHub] Received InitialPlayers: {ids.Count} players");
+
+                // Spawn only REMOTE players
+                // Local player was already spawned in Connect()
+                foreach (var id in ids)
+                {
+                    if (id == localId)
+                    {
+                        Debug.Log($"[FarmHub] Skipping local player {id} in InitialPlayers");
+                        continue;
+                    }
+
+                    Debug.Log($"[FarmHub] Spawning remote player {id}");
+                    PlayerManager.SpawnPlayer(id, false);
+                }
             });
         });
 
-        // ---------- PLAYER EVENTS ----------
+        // -------- INITIAL PLAYER STATES (positions) --------
+        connection.On<Dictionary<int, TransformationDC>>("InitialPlayerStates", states =>
+        {
+            if (farmId == null || states == null)
+                return;
 
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                Debug.Log($"[FarmHub] Received InitialPlayerStates: {states.Count} transforms");
+
+                foreach (var kvp in states)
+                {
+                    int playerId = kvp.Key;
+                    TransformationDC transform = kvp.Value;
+
+                    Debug.Log($"[FarmHub] Setting initial position for player {playerId}");
+                    PlayerManager.UpdatePlayerTransformation(playerId, transform);
+                }
+            });
+        });
+
+        // -------- PLAYER JOINED --------
         connection.On<int>("PlayerJoined", id =>
         {
-            Debug.Log("PlayerJoined");
             if (farmId == null)
                 return;
 
+            int localPlayerId = PlayerManager.GetLocalPlayerID();
+
+            // Never spawn self as remote
+            if (id == localPlayerId)
+            {
+                Debug.Log($"[FarmHub] Ignoring PlayerJoined for self ({id})");
+                return;
+            }
+
+            Debug.Log($"[FarmHub] Remote player {id} joined");
             MainThreadDispatcher.Enqueue(() =>
                 PlayerManager.SpawnPlayer(id, false));
         });
 
+        // -------- PLAYER LEFT --------
         connection.On<int>("PlayerLeft", id =>
         {
             if (farmId == null)
                 return;
 
+            Debug.Log($"[FarmHub] Player {id} left");
             MainThreadDispatcher.Enqueue(() =>
                 PlayerManager.RemovePlayer(id));
         });
 
-        connection.On<int, TransformationDC>(
-            "PlayerTransformationUpdated",
+        // -------- TRANSFORM UPDATE --------
+        connection.On<int, TransformationDC>("PlayerTransformationUpdated",
             (id, t) =>
             {
                 if (farmId == null)
@@ -173,35 +213,5 @@ public class FarmHubCommunicator : HubClientBase
                 MainThreadDispatcher.Enqueue(() =>
                     PlayerManager.UpdatePlayerTransformation(id, t));
             });
-
-        // ---------- INITIAL SNAPSHOT ----------
-        connection.On<List<int>>("InitialPlayers", ids =>
-        {
-            if (farmId == null)
-                return;
-
-            Debug.Log($"InitialPlayers received: {ids.Count}");
-
-            MainThreadDispatcher.Enqueue(() =>
-            {
-                foreach (var id in ids)
-                    PlayerManager.SpawnPlayer(id, false);
-            });
-        });
-
-        // ---------- CONNECTION CLOSED ----------
-
-        connection.Closed += async _ =>
-        {
-            farmId = null;
-
-            MainThreadDispatcher.Enqueue(() =>
-            {
-                PlayerManager.ClearAllPlayers();
-                Core.Instance.Managers.UIManager.ShowMenu();
-            });
-
-            await Task.CompletedTask;
-        };
     }
 }

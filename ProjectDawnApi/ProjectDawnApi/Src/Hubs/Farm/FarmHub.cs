@@ -5,15 +5,19 @@ using ProjectDawnApi;
 [Authorize]
 public class FarmHub : Hub
 {
+    private readonly IHubContext<FarmListHub> farmListHub;
     private readonly PlayerTransformationService movement;
     private readonly FarmSessionService sessions;
+    // 👈 ADD THIS
 
     public FarmHub(
         FarmSessionService sessions,
-        PlayerTransformationService movement)
+        PlayerTransformationService movement,
+        IHubContext<FarmListHub> farmListHub) // 👈 INJECT
     {
         this.sessions = sessions;
         this.movement = movement;
+        this.farmListHub = farmListHub;
     }
 
     // =======================
@@ -38,6 +42,11 @@ public class FarmHub : Hub
             "PlayerLeft",
             playerId
         );
+
+        // 🔔 BROADCAST farm list update
+        await farmListHub.Clients.All.SendAsync("FarmListUpdated");
+
+        Console.WriteLine("📤 [SERVER] FarmListUpdated sent (LeaveFarm)");
     }
 
     public override Task OnDisconnectedAsync(Exception ex)

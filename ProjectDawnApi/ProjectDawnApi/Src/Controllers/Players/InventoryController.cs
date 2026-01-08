@@ -6,7 +6,7 @@ namespace ProjectDawnApi.Src.Controllers.Players;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class InventoryController : ControllerBase
 {
     private readonly PlayerInventoryService inventoryService;

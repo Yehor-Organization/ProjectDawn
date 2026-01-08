@@ -29,6 +29,14 @@ public abstract class APIClientBase : MonoBehaviour
 
     protected virtual bool RequiresAuthService => true;
 
+    protected string BuildApiUrl(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("API path cannot be null or empty.", nameof(path));
+
+        return Config.APIBaseUrl.TrimEnd('/') + "/" + path.TrimStart('/');
+    }
+
     protected Task Delete(string path, bool requiresAuth = true)
         => Send<object>("DELETE", path, null, requiresAuth);
 
@@ -56,14 +64,14 @@ public abstract class APIClientBase : MonoBehaviour
     // CORE REQUEST (UNITY SAFE)
     // -----------------------
     private async Task<T> Send<T>(
-        string method,
-        string path,
-        object body,
-        bool requiresAuth)
+      string method,
+      string path,
+      object body,
+      bool requiresAuth)
     {
         Debug.Log($"[API] {method} {path} START");
 
-        var url = $"{Config.APIBaseUrl}{path}";
+        var url = BuildApiUrl(path); // ✅ single source of truth
         using var req = new UnityWebRequest(url, method);
         req.downloadHandler = new DownloadHandlerBuffer();
 
@@ -83,7 +91,6 @@ public abstract class APIClientBase : MonoBehaviour
             req.SetRequestHeader("Authorization", $"Bearer {token}");
         }
 
-        // ✅ Unity-safe await
         Debug.Log("[API] SENDWEBREQUEST START");
         await req.SendWebRequest().ToTask();
         Debug.Log("[API] SENDWEBREQUEST END");
