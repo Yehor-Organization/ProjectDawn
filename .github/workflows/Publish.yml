@@ -71,8 +71,9 @@ jobs:
           git push
 
 # ==================================================
-# WINDOWS BUILD (SELF-HOSTED, EPHEMERAL)
+# WINDOWS BUILD
 # ==================================================
+
   windows:
     needs: version
     if: github.event.inputs.platform != 'android'
@@ -88,25 +89,23 @@ jobs:
           path: ProjectDawn/Library
           key: Library-windows
 
+      - name: Reset Unity Library (avoid permission issues)
+        run: |
+          rm -rf ProjectDawn/Library
+
       - uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_BUILDER_DOCKER_USER: "${{ runner.uid }}:${{ runner.gid }}"
         with:
           projectPath: ProjectDawn
           targetPlatform: StandaloneWindows64
           buildMethod: CIBuilder.BuildWindows
           docker: false
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows
-          path: ProjectDawn/Builds/
-
 # ==================================================
-# ANDROID BUILD (SELF-HOSTED, EPHEMERAL)
+# ANDROID BUILD
 # ==================================================
   android:
     needs: windows
@@ -123,22 +122,21 @@ jobs:
           path: ProjectDawn/Library
           key: Library-android
 
+      - name: Reset Unity Library (avoid permission issues)
+        run: |
+          rm -rf ProjectDawn/Library
+
       - uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_BUILDER_DOCKER_USER: "${{ runner.uid }}:${{ runner.gid }}"
         with:
           projectPath: ProjectDawn
           targetPlatform: Android
           buildMethod: CIBuilder.BuildAndroid
           docker: false
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android
-          path: ProjectDawn/Builds/
 
 # ==================================================
 # RELEASE (NO UNITY, NO SELF-HOSTED)
