@@ -26,7 +26,7 @@ jobs:
 # VERSION BUMP (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   version:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
@@ -145,7 +145,7 @@ jobs:
 # ==================================================
   release:
     needs: [version, windows, android]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     if: always()
 
     steps:
