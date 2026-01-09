@@ -110,7 +110,7 @@ jobs:
   android:
     needs: windows
     if: github.event.inputs.platform != 'windows'
-    runs-on: [self-hosted, linux, x64, R1]
+    runs-on: [self-hosted, linux, x64, R2]
 
     steps:
       - uses: actions/checkout@v4
