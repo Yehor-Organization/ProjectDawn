@@ -29,7 +29,7 @@ jobs:
           lfs: true
 
       # -----------------------------
-      # Cache Unity Library (per target)
+      # Cache Unity Library
       # -----------------------------
       - name: Cache Library
         uses: actions/cache@v4
@@ -40,25 +40,23 @@ jobs:
             Library-
 
       # -----------------------------
-      # Safety: ensure no ULF conflicts
+      # Sanity check (ULF mode)
       # -----------------------------
       - name: Sanity check Unity env
         run: |
-          if env | grep UNITY_LICENSE; then
-            echo "❌ UNITY_LICENSE must NOT be set when using login activation"
+          if env | grep -E "UNITY_EMAIL|UNITY_PASSWORD|UNITY_SERIAL"; then
+            echo "❌ Login-based Unity vars detected. Remove them."
             exit 1
           fi
-          echo "✅ Login-based activation mode"
+          echo "✅ ULF-based activation mode"
 
       # -----------------------------
-      # Build Unity (LOGIN METHOD)
+      # Build Unity (ULF METHOD)
       # -----------------------------
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
         env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           projectPath: ProjectDawn
           targetPlatform: ${{ matrix.targetPlatform }}
