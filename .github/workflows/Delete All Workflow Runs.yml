@@ -6,6 +6,7 @@ on:
 jobs:
   delete-runs:
     runs-on: [self-hosted, linux, x64]
+
     steps:
       - name: Delete all workflow runs
         uses: Mattraks/delete-workflow-runs@v2.0.6
