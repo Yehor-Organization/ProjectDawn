@@ -1,8 +1,4 @@
-name: Publish(GirHub)
-
-concurrency:
-  group: unity-build
-  cancel-in-progress: false
+name: Publish
 
 on:
   workflow_dispatch:
