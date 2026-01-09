@@ -26,7 +26,7 @@ jobs:
 # VERSION BUMP
 # ==================================================
   version:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
@@ -70,13 +70,10 @@ jobs:
           git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}"
           git push
 
-# ==================================================
-# WINDOWS BUILD
-# ==================================================
   windows:
     needs: version
     if: github.event.inputs.platform != 'android'
-    runs-on: [self-hosted, linux, x64, R1]
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +84,11 @@ jobs:
         with:
           path: ProjectDawn/Library
           key: Library-windows
+
+      # 🔥 IMPORTANT FIX
+      - name: Reset unity-builder action
+        run: |
+          sudo rm -rf "$RUNNER_WORKSPACE/_actions/game-ci/unity-builder"
 
       - uses: game-ci/unity-builder@v4
         env:
@@ -104,13 +106,11 @@ jobs:
           name: windows
           path: ProjectDawn/Builds/
 
-# ==================================================
-# ANDROID BUILD
-# ==================================================
+
   android:
     needs: windows
     if: github.event.inputs.platform != 'windows'
-    runs-on: [self-hosted, linux, x64, R2]
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/checkout@v4
@@ -121,6 +121,11 @@ jobs:
         with:
           path: ProjectDawn/Library
           key: Library-android
+
+      # 🔥 IMPORTANT FIX
+      - name: Reset unity-builder action
+        run: |
+          sudo rm -rf "$RUNNER_WORKSPACE/_actions/game-ci/unity-builder"
 
       - uses: game-ci/unity-builder@v4
         env:
