@@ -14,35 +14,29 @@ on:
           - android
 
 jobs:
-  publish:
-    name: Publish Unity Build
+  # =============================
+  # WINDOWS BUILD
+  # =============================
+  windows:
+    name: Build Windows
+    if: github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all'
     runs-on: [self-hosted, linux, x64]
 
     steps:
-      # -----------------------------
-      # Checkout
-      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      # -----------------------------
-      # Cache Unity Library
-      # -----------------------------
       - name: Cache Unity Library
         uses: actions/cache@v4
         with:
           path: ProjectDawn/Library
-          key: Library-${{ github.event.inputs.platform }}
+          key: Library-windows
           restore-keys: |
             Library-
 
-      # =============================
-      # WINDOWS BUILD
-      # =============================
       - name: Build Windows
-        if: github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all'
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -54,17 +48,35 @@ jobs:
           buildMethod: CIBuilder.BuildWindows
 
       - name: Upload Windows Artifact
-        if: github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all'
         uses: actions/upload-artifact@v4
         with:
           name: windows
           path: ProjectDawn/Builds/
 
-      # =============================
-      # ANDROID BUILD
-      # =============================
+  # =============================
+  # ANDROID BUILD
+  # =============================
+  android:
+    name: Build Android
+    if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all'
+    runs-on: [self-hosted, linux, x64]
+    needs: windows   # ensures sequential execution
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: ProjectDawn/Library
+          key: Library-android
+          restore-keys: |
+            Library-
+
       - name: Build Android
-        if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all'
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -76,7 +88,6 @@ jobs:
           buildMethod: CIBuilder.BuildAndroid
 
       - name: Upload Android Artifact
-        if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all'
         uses: actions/upload-artifact@v4
         with:
           name: android
