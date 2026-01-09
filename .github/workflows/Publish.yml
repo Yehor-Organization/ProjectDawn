@@ -23,10 +23,10 @@ on:
 
 jobs:
 # ==================================================
-# VERSION BUMP
+# VERSION BUMP (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   version:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
@@ -70,6 +70,9 @@ jobs:
           git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}"
           git push
 
+# ==================================================
+# WINDOWS BUILD (SELF-HOSTED, EPHEMERAL)
+# ==================================================
   windows:
     needs: version
     if: github.event.inputs.platform != 'android'
@@ -84,11 +87,6 @@ jobs:
         with:
           path: ProjectDawn/Library
           key: Library-windows
-
-      # 🔥 IMPORTANT FIX
-      - name: Reset unity-builder action
-        run: |
-          sudo rm -rf "$RUNNER_WORKSPACE/_actions/game-ci/unity-builder"
 
       - uses: game-ci/unity-builder@v4
         env:
@@ -106,7 +104,9 @@ jobs:
           name: windows
           path: ProjectDawn/Builds/
 
-
+# ==================================================
+# ANDROID BUILD (SELF-HOSTED, EPHEMERAL)
+# ==================================================
   android:
     needs: windows
     if: github.event.inputs.platform != 'windows'
@@ -121,11 +121,6 @@ jobs:
         with:
           path: ProjectDawn/Library
           key: Library-android
-
-      # 🔥 IMPORTANT FIX
-      - name: Reset unity-builder action
-        run: |
-          sudo rm -rf "$RUNNER_WORKSPACE/_actions/game-ci/unity-builder"
 
       - uses: game-ci/unity-builder@v4
         env:
@@ -144,11 +139,11 @@ jobs:
           path: ProjectDawn/Builds/
 
 # ==================================================
-# RELEASE
+# RELEASE (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   release:
     needs: [version, windows, android]
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     if: always()
 
     steps:
