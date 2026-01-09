@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build Unity
+  publish:
+    name: Publish Unity Builds
     runs-on: ubuntu-latest
 
     strategy:
@@ -15,31 +15,44 @@ jobs:
           - android
 
     steps:
+      # -----------------------------
+      # Checkout repo (with LFS)
+      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
 
+      # -----------------------------
+      # Cache Unity Library (per target)
+      # -----------------------------
       - name: Cache Library
         uses: actions/cache@v4
         with:
-          path: Library
+          path: ProjectDawn/Library
           key: Library-${{ matrix.target }}
           restore-keys: Library-
 
-      - name: Unity Builder
+      # -----------------------------
+      # Build Unity
+      # -----------------------------
+      - name: Build Unity Player
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
+          projectPath: ProjectDawn
           unityVersion: 2022.3.20f1
           targetPlatform: ${{ matrix.target == 'windows' && 'StandaloneWindows64' || 'Android' }}
           buildMethod: ${{ matrix.target == 'windows' && 'CIBuilder.BuildWindows' || 'CIBuilder.BuildAndroid' }}
 
-      - name: Upload Build Artifacts
+      # -----------------------------
+      # Upload EXE / APK artifacts
+      # -----------------------------
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.target }}
-          path: Builds/
+          name: ${{ matrix.target }}
+          path: ProjectDawn/Builds/
