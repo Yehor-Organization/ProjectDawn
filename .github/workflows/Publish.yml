@@ -139,28 +139,11 @@ jobs:
           path: ProjectDawn/Builds/
 
 # ==================================================
-# CLEANUP (SELF-HOSTED – ALWAYS RUNS)
-# ==================================================
-  cleanup:
-    name: Cleanup Runner
-    runs-on: [self-hosted, linux, x64]
-    needs: [windows, android]
-    if: always()
-
-    steps:
-      - name: Cleanup workspace
-        run: |
-          echo "🧹 Cleaning workspace..."
-          rm -rf "$GITHUB_WORKSPACE"/*
-          rm -rf "$GITHUB_WORKSPACE"/.[!.]*
-          echo "✅ Workspace cleaned"
-
-# ==================================================
 # RELEASE
 # ==================================================
   release:
     needs: [version, windows, android]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     if: always()
 
     steps:
