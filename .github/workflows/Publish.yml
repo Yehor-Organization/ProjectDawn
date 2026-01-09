@@ -20,7 +20,7 @@ jobs:
   windows:
     name: Build Windows
     if: github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all'
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, windows, x64]
 
     steps:
       - name: Checkout
