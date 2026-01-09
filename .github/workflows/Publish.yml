@@ -1,12 +1,13 @@
 name: Publish
+
 on:
   workflow_dispatch:
+
 jobs:
   publish:
     name: Publish Unity Builds
     runs-on: ubuntu-latest
-    env:
-      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -17,6 +18,7 @@ jobs:
           - name: android
             targetPlatform: Android
             buildMethod: CIBuilder.BuildAndroid
+
     steps:
       # -----------------------------
       # Checkout repo (with LFS)
@@ -25,17 +27,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+
       # -----------------------------
-      # FREE DISK SPACE (REQUIRED)
+      # Free disk space (SAFE)
       # -----------------------------
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
           sudo rm -rf /usr/local/share/boost
           sudo apt-get clean
           df -h
+
       # -----------------------------
       # Cache Unity Library
       # -----------------------------
@@ -46,25 +49,43 @@ jobs:
           key: Library-${{ matrix.name }}
           restore-keys: |
             Library-
+
+      # -----------------------------
+      # Read Unity version from project
+      # -----------------------------
+      - name: Read Unity version
+        id: unity-version
+        run: |
+          VERSION=$(grep m_EditorVersion ProjectDawn/ProjectSettings/ProjectVersion.txt | cut -d ':' -f2 | tr -d ' ')
+          echo "Unity version detected: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       # -----------------------------
       # Verify license is set
       # -----------------------------
       - name: Verify Unity License
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         run: |
           if [ -z "$UNITY_LICENSE" ]; then
             echo "❌ UNITY_LICENSE is not set"
             exit 1
           fi
           echo "✅ UNITY_LICENSE is set (${#UNITY_LICENSE} characters)"
+
       # -----------------------------
       # Build Unity (ULF)
       # -----------------------------
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           projectPath: ProjectDawn
+          unityVersion: ${{ steps.unity-version.outputs.version }}
           targetPlatform: ${{ matrix.targetPlatform }}
           buildMethod: ${{ matrix.buildMethod }}
+
       # -----------------------------
       # Upload artifacts
       # -----------------------------
