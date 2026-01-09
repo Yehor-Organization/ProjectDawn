@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: windows
@@ -22,14 +23,29 @@ jobs:
         with:
           lfs: true
 
+      # --------------------------------------------------
+      # Free disk space (safe)
+      # --------------------------------------------------
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
           sudo rm -rf /usr/local/share/boost
           sudo apt-get clean
 
+      # --------------------------------------------------
+      # SAFETY: ensure NO serial/email leaks exist
+      # --------------------------------------------------
+      - name: Sanity check Unity env
+        run: |
+          if env | grep -E "UNITY_(SERIAL|EMAIL|PASSWORD)"; then
+            echo "❌ Invalid Unity env vars detected"
+            exit 1
+          fi
+          echo "✅ Unity env clean"
+
+      # --------------------------------------------------
+      # Build
+      # --------------------------------------------------
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
         env:
@@ -39,6 +55,9 @@ jobs:
           targetPlatform: ${{ matrix.targetPlatform }}
           buildMethod: ${{ matrix.buildMethod }}
 
+      # --------------------------------------------------
+      # Upload artifacts
+      # --------------------------------------------------
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
