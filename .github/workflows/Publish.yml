@@ -82,9 +82,19 @@ jobs:
     runs-on: [self-hosted, linux, x64]
 
     steps:
+      - name: Pre-cleanup workspace
+        run: |
+          echo "🧹 Pre-cleaning workspace..."
+          sudo rm -rf $GITHUB_WORKSPACE/* || true
+          sudo rm -rf $GITHUB_WORKSPACE/.* 2>/dev/null || true
+          sudo chown -R $USER:$USER $GITHUB_WORKSPACE || true
+          sudo chown -R $USER:$USER $(dirname $GITHUB_WORKSPACE)/_actions || true
+          echo "✅ Pre-cleanup complete"
+          
       - uses: actions/checkout@v4
         with:
           lfs: true
+          clean: false
 
       - uses: actions/cache@v4
         with:
@@ -107,6 +117,14 @@ jobs:
           name: windows
           path: ProjectDawn/Builds/
 
+      - name: Post-build cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning build artifacts..."
+          sudo rm -rf ProjectDawn/Builds || true
+          sudo rm -rf ProjectDawn/Temp || true
+          sudo rm -rf ProjectDawn/Logs || true
+
 # ==================================================
 # ANDROID BUILD (SERIALIZED)
 # ==================================================
@@ -117,9 +135,19 @@ jobs:
     runs-on: [self-hosted, linux, x64]
 
     steps:
+      - name: Pre-cleanup workspace
+        run: |
+          echo "🧹 Pre-cleaning workspace..."
+          sudo rm -rf $GITHUB_WORKSPACE/* || true
+          sudo rm -rf $GITHUB_WORKSPACE/.* 2>/dev/null || true
+          sudo chown -R $USER:$USER $GITHUB_WORKSPACE || true
+          sudo chown -R $USER:$USER $(dirname $GITHUB_WORKSPACE)/_actions || true
+          echo "✅ Pre-cleanup complete"
+          
       - uses: actions/checkout@v4
         with:
           lfs: true
+          clean: false
 
       - uses: actions/cache@v4
         with:
@@ -142,6 +170,14 @@ jobs:
           name: android
           path: ProjectDawn/Builds/
 
+      - name: Post-build cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning build artifacts..."
+          sudo rm -rf ProjectDawn/Builds || true
+          sudo rm -rf ProjectDawn/Temp || true
+          sudo rm -rf ProjectDawn/Logs || true
+
 # ==================================================
 # CLEANUP (ALWAYS RUNS)
 # ==================================================
@@ -154,11 +190,9 @@ jobs:
     steps:
       - name: Cleanup Unity workspace
         run: |
-          echo "🧹 Cleaning Unity workspace..."
-          rm -rf ProjectDawn/Library
-          rm -rf ProjectDawn/Temp
-          rm -rf ProjectDawn/Logs
-          rm -rf ProjectDawn/Builds
+          echo "🧹 Final cleanup..."
+          sudo rm -rf $GITHUB_WORKSPACE/* || true
+          sudo rm -rf $GITHUB_WORKSPACE/.* 2>/dev/null || true
           echo "✅ Cleanup complete"
 # ==================================================
 # GITHUB RELEASE
