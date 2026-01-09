@@ -12,20 +12,12 @@ public class Core : MonoBehaviour
     private static TaskCompletionSource<Core> readyTcs =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    [Header("Config")]
-    [SerializeField] private AppConfig appConfig;
-
-    private float last;
     public static Core Instance { get; private set; }
 
-    // =========================
-    // READINESS
-    // =========================
     public static Task<Core> WhenReady => readyTcs.Task;
 
     private void Awake()
     {
-        // 🔥 CRITICAL: prevent focus-loss freezes
         Application.runInBackground = true;
 
         if (Instance != null)
@@ -37,27 +29,8 @@ public class Core : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        InitializeConfig();
         Validate();
-
         readyTcs.TrySetResult(this);
-    }
-
-    private void InitializeConfig()
-    {
-        if (appConfig == null)
-        {
-            Debug.LogError("[Core] AppConfig not assigned");
-            return;
-        }
-
-        Config.APIBaseUrl = appConfig.APIBaseUrl.TrimEnd('/');
-        Debug.Log($"[Core] APIBaseUrl initialized: {Config.APIBaseUrl}");
-    }
-
-    private void OnApplicationFocus(bool hasFocus)
-    {
-        Debug.Log($"[Core] Application focus: {hasFocus}");
     }
 
     private void Validate()

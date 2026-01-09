@@ -34,7 +34,7 @@ public abstract class APIClientBase : MonoBehaviour
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("API path cannot be null or empty.", nameof(path));
 
-        return Config.APIBaseUrl.TrimEnd('/') + "/" + path.TrimStart('/');
+        return ConfigProvider.Config.APIBaseUrl.TrimEnd('/') + "/" + path.TrimStart('/');
     }
 
     protected Task Delete(string path, bool requiresAuth = true)
