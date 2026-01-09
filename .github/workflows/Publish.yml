@@ -15,7 +15,7 @@ on:
 
 jobs:
   # =============================
-  # WINDOWS BUILD
+  # WINDOWS BUILD (PARALLEL)
   # =============================
   windows:
     name: Build Windows
@@ -54,13 +54,12 @@ jobs:
           path: ProjectDawn/Builds/
 
   # =============================
-  # ANDROID BUILD
+  # ANDROID BUILD (PARALLEL)
   # =============================
   android:
     name: Build Android
     if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all'
     runs-on: [self-hosted, linux, x64]
-    needs: windows   # ensures sequential execution
 
     steps:
       - name: Checkout
@@ -92,3 +91,22 @@ jobs:
         with:
           name: android
           path: ProjectDawn/Builds/
+
+  # =============================
+  # CLEANUP (RUNS LAST)
+  # =============================
+  cleanup:
+    name: Cleanup Runner
+    runs-on: [self-hosted, linux, x64]
+    needs: [windows, android]
+    if: always()   # 👈 runs even if builds fail
+
+    steps:
+      - name: Cleanup Unity workspace
+        run: |
+          echo "🧹 Cleaning Unity workspace..."
+          rm -rf ProjectDawn/Library
+          rm -rf ProjectDawn/Temp
+          rm -rf ProjectDawn/Logs
+          rm -rf ProjectDawn/Builds
+          echo "✅ Cleanup complete"
