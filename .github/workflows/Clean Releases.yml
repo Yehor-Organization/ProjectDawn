@@ -1,0 +1,96 @@
+name: Clean Releases
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (to allow git operations)
+        uses: actions/checkout@v4
+
+      - name: Keep only highest patch per major.minor per app and delete the rest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching all release tags from $GITHUB_REPOSITORY ..."
+          tags=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName --jq '.[].tagName')
+
+          declare -A max_patch_per_app_minor
+
+          for tag in $tags; do
+            tag=${tag//\"/}
+            # Match format: v1.2.3-AppName
+            if [[ "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)-([A-Za-z0-9_-]+)$ ]]; then
+              major="${BASH_REMATCH[1]}"
+              minor="${BASH_REMATCH[2]}"
+              patch="${BASH_REMATCH[3]}"
+              app="${BASH_REMATCH[4]}"
+              key="${app}-${major}.${minor}"
+
+              current_tag="${max_patch_per_app_minor[$key]}"
+              if [[ -z "$current_tag" ]]; then
+                max_patch_per_app_minor[$key]="$tag"
+              else
+                if [[ "$current_tag" =~ ^v${major}\.${minor}\.([0-9]+)-${app}$ ]]; then
+                  current_patch="${BASH_REMATCH[1]}"
+                  if (( patch > current_patch )); then
+                    max_patch_per_app_minor[$key]="$tag"
+                  fi
+                fi
+              fi
+            fi
+          done
+
+          echo "✅ Keeping highest patch version per major.minor per app:"
+          for keep in "${max_patch_per_app_minor[@]}"; do
+            echo "Keeping: $keep"
+          done
+
+          echo ""
+          echo "🗑️ Deleting all others..."
+
+          for tag in $tags; do
+            tag=${tag//\"/}
+            keep=false
+            for keep_tag in "${max_patch_per_app_minor[@]}"; do
+              if [[ "$tag" == "$keep_tag" ]]; then
+                keep=true
+                break
+              fi
+            done
+            if [[ "$keep" == false ]]; then
+              echo "Deleting release and tag: $tag"
+              gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
+              git push origin --delete "$tag" || echo "Failed to delete tag $tag (might not exist)"
+            fi
+          done
+      - name: Delete orphan tags (not associated with any GitHub release)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching all tags from the Git repo..."
+          git fetch --tags
+          all_tags=$(git tag)
+  
+          echo "Fetching all release tags from GitHub..."
+          release_tags=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName --jq '.[].tagName')
+  
+          echo "Identifying tags not associated with a release..."
+          for tag in $all_tags; do
+            found=false
+            for rel_tag in $release_tags; do
+              rel_tag=${rel_tag//\"/}
+              if [[ "$tag" == "$rel_tag" ]]; then
+                found=true
+                break
+              fi
+            done
+  
+            if [[ "$found" == false ]]; then
+              echo "🗑️ Deleting orphan tag: $tag"
+              git push origin --delete "$tag" || echo "⚠️ Failed to delete tag $tag"
+            fi
+          done
