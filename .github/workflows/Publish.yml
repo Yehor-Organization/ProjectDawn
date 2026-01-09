@@ -47,13 +47,10 @@ jobs:
         id: bump
         run: |
           FILE="ProjectDawn/ProjectSettings/ProjectSettings.asset"
-
           CURRENT=$(grep -m1 "bundleVersion:" "$FILE" | awk '{print $2}')
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-
           MODE="${{ github.event.inputs.version_bump }}"
           BUMPED=false
-
           case "$MODE" in
             x.x.1) PATCH=$((PATCH+1)); BUMPED=true ;;
             x.1.0) MINOR=$((MINOR+1)); PATCH=0; BUMPED=true ;;
@@ -61,16 +58,12 @@ jobs:
             none) ;;
             *) echo "Invalid bump"; exit 1 ;;
           esac
-
           NEW="$MAJOR.$MINOR.$PATCH"
-
           if [ "$BUMPED" = true ]; then
             sed -i "s/bundleVersion:.*/bundleVersion: $NEW/" "$FILE"
           fi
-
           echo "version=$NEW" >> $GITHUB_OUTPUT
           echo "bumped=$BUMPED" >> $GITHUB_OUTPUT
-
       - name: Commit version bump
         if: steps.bump.outputs.bumped == 'true'
         run: |
@@ -79,7 +72,6 @@ jobs:
           git add ProjectDawn/ProjectSettings/ProjectSettings.asset
           git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}"
           git push
-
 # ==================================================
 # WINDOWS BUILD
 # ==================================================
@@ -87,7 +79,7 @@ jobs:
     name: Build Windows
     needs: version
     if: github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/checkout@v4
@@ -122,7 +114,7 @@ jobs:
     name: Build Android
     needs: windows
     if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/checkout@v4
@@ -155,7 +147,7 @@ jobs:
 # ==================================================
   cleanup:
     name: Cleanup Runner
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     needs: [windows, android]
     if: always()
 
@@ -168,7 +160,6 @@ jobs:
           rm -rf ProjectDawn/Logs
           rm -rf ProjectDawn/Builds
           echo "✅ Cleanup complete"
-
 # ==================================================
 # GITHUB RELEASE
 # ==================================================
