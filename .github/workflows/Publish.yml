@@ -93,11 +93,11 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_BUILDER_DOCKER_USER: "${{ runner.uid }}:${{ runner.gid }}"
         with:
           projectPath: ProjectDawn
           targetPlatform: StandaloneWindows64
           buildMethod: CIBuilder.BuildWindows
-          dockerParameters: "--user $(id -u):$(id -g)"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -127,16 +127,33 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_BUILDER_DOCKER_USER: "${{ runner.uid }}:${{ runner.gid }}"
         with:
           projectPath: ProjectDawn
           targetPlatform: Android
           buildMethod: CIBuilder.BuildAndroid
-          dockerParameters: "--user $(id -u):$(id -g)"
 
       - uses: actions/upload-artifact@v4
         with:
           name: android
           path: ProjectDawn/Builds/
+
+# ==================================================
+# CLEANUP (SELF-HOSTED – ALWAYS RUNS)
+# ==================================================
+  cleanup:
+    name: Cleanup Runner
+    runs-on: [self-hosted, linux, x64]
+    needs: [windows, android]
+    if: always()
+
+    steps:
+      - name: Cleanup workspace
+        run: |
+          echo "🧹 Cleaning workspace..."
+          rm -rf "$GITHUB_WORKSPACE"/*
+          rm -rf "$GITHUB_WORKSPACE"/.[!.]*
+          echo "✅ Workspace cleaned"
 
 # ==================================================
 # RELEASE
@@ -155,6 +172,7 @@ jobs:
         with:
           tag_name: v${{ needs.version.outputs.new_version }}
           name: Release v${{ needs.version.outputs.new_version }}
+          generate_release_notes: true
           files: |
             dist/windows/**
             dist/android/**
