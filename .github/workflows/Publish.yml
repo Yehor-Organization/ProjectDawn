@@ -5,7 +5,6 @@ on:
 
 jobs:
   publish:
-    name: Publish Unity Builds
     runs-on: ubuntu-latest
 
     strategy:
