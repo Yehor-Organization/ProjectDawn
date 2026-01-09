@@ -15,9 +15,13 @@ public class FarmListUI : MonoBehaviour
     [SerializeField] private GameObject farmListItemPrefab;
 
     private GameManager gameManager;
+
     // =====================
     // DEPENDENCIES
     // =====================
+    private bool populateInProgress;
+
+    private int populateVersion;
 
     private AuthService Auth =>
         authService ??= Core.Instance?.Services?.AuthService
@@ -103,24 +107,39 @@ public class FarmListUI : MonoBehaviour
         if (farmListContainer == null || FarmApi == null)
             return;
 
-        var farms = await FarmApi.GetAllFarms();
-        if (farms == null)
+        // 🔒 Prevent overlapping populates
+        if (populateInProgress)
             return;
 
-        Debug.Log($"FARMS COUNT = {farms.Count}");
+        populateInProgress = true;
+        int myVersion = ++populateVersion;
 
-        Debug.Log("CLEAR UI START");
-        for (int i = farmListContainer.childCount - 1; i >= 0; i--)
-            Destroy(farmListContainer.GetChild(i).gameObject);
-        Debug.Log("CLEAR UI END");
-
-        Debug.Log("INSTANTIATE START");
-        foreach (var farm in farms)
+        try
         {
-            var item = Instantiate(farmListItemPrefab, farmListContainer);
-            var ui = item.GetComponent<FarmListItemUI>();
-            ui?.Setup(farm, GameManager, this);
+            var farms = await FarmApi.GetAllFarms();
+
+            // 🛑 A newer populate started while we awaited
+            if (myVersion != populateVersion)
+                return;
+
+            if (farms == null)
+                return;
+
+            // Clear UI
+            for (int i = farmListContainer.childCount - 1; i >= 0; i--)
+                Destroy(farmListContainer.GetChild(i).gameObject);
+
+            // Build UI
+            foreach (var farm in farms)
+            {
+                var item = Instantiate(farmListItemPrefab, farmListContainer);
+                var ui = item.GetComponent<FarmListItemUI>();
+                ui?.Setup(farm, GameManager, this);
+            }
         }
-        Debug.Log("INSTANTIATE END");
+        finally
+        {
+            populateInProgress = false;
+        }
     }
 }

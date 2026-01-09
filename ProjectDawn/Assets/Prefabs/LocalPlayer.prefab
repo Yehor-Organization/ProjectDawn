@@ -48,12 +48,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15968d4fa04ae6a439a3dbfdd578b76d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalPlayerController
-  moveSpeed: 5
-  rotateSpeed: 200
   instantRotation: 0
   movementInertia: 0.1
-  rotationInertia: 0.15
+  moveSpeed: 5
   positionUpdateThreshold: 0.05
+  rotateSpeed: 200
+  rotationInertia: 0.15
   rotationUpdateThreshold: 1
   sendInterval: 0.1
 --- !u!54 &5165134369686666578
@@ -81,7 +81,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!136 &6183537404303759093
 CapsuleCollider:
@@ -210,6 +210,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &1369157115781685134
 BoxCollider:

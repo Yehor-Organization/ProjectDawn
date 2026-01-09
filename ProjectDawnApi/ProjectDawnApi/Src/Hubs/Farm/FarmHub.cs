@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using ProjectDawnApi;
 
 [Authorize]
@@ -29,6 +30,7 @@ public class FarmHub : Hub
         int playerId = this.GetPlayerId();
 
         await sessions.JoinAsync(this, farmId, playerId);
+        await farmListHub.Clients.All.SendAsync("FarmListUpdated");
     }
 
     public async Task LeaveFarm(string farmId)
@@ -42,10 +44,9 @@ public class FarmHub : Hub
             "PlayerLeft",
             playerId
         );
-
-        // 🔔 BROADCAST farm list update
         await farmListHub.Clients.All.SendAsync("FarmListUpdated");
 
+        // 🔔 BROADCAST farm list update
         Console.WriteLine("📤 [SERVER] FarmListUpdated sent (LeaveFarm)");
     }
 

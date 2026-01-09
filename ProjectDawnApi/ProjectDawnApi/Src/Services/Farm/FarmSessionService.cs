@@ -5,16 +5,19 @@ namespace ProjectDawnApi;
 public class FarmSessionService
 {
     private readonly FarmSessionDBCommunicator dbCommunicator;
+    private readonly IHubContext<FarmListHub> farmListHub;
     private readonly ILogger<FarmSessionService> logger;
     private readonly PlayerTransformationService transformService;
 
     public FarmSessionService(
         FarmSessionDBCommunicator dbCommunicator,
-        PlayerTransformationService transformService, // 👈 ADD THIS
+        PlayerTransformationService transformService,
+        IHubContext<FarmListHub> farmListHub, // 👈 ADD
         ILogger<FarmSessionService> logger)
     {
         this.dbCommunicator = dbCommunicator;
         this.transformService = transformService;
+        this.farmListHub = farmListHub; // 👈 ADD
         this.logger = logger;
     }
 
@@ -33,21 +36,20 @@ public class FarmSessionService
     public async Task HandleDisconnectAsync(Hub hub, Exception? ex)
     {
         var visitor = await dbCommunicator
-            .RemoveByConnectionAsync(hub.Context.ConnectionId);
+            .GetVisitorByConnectionAsync(hub.Context.ConnectionId);
 
-        if (visitor != null)
-        {
-            // 🔑 NEW: Clean up transform cache
-            transformService.RemovePlayerTransform(visitor.FarmId, visitor.PlayerId);
+        if (visitor == null)
+            return;
 
-            await hub.Clients.OthersInGroup(
-                    visitor.FarmId.ToString())
-                .SendAsync("PlayerLeft", visitor.PlayerId);
+        await CleanupSessionAsync(
+            hub,
+            visitor.FarmId,
+            visitor.PlayerId);
 
-            logger.LogInformation(
-                "Player {PlayerId} disconnected from farm {FarmId}",
-                visitor.PlayerId, visitor.FarmId);
-        }
+        logger.LogInformation(
+            "Player {PlayerId} disconnected from farm {FarmId}",
+            visitor.PlayerId,
+            visitor.FarmId);
     }
 
     // -----------------------------
@@ -110,19 +112,37 @@ public class FarmSessionService
         if (!int.TryParse(farmIdStr, out int farmId))
             return;
 
-        // 🔑 NEW: Clean up transform cache
-        transformService.RemovePlayerTransform(farmId, playerId);
-
-        await dbCommunicator.RemoveVisitorAsync(farmId, playerId);
-
-        await hub.Groups.RemoveFromGroupAsync(
-            hub.Context.ConnectionId, farmIdStr);
-
-        await hub.Clients.OthersInGroup(farmIdStr)
-            .SendAsync("PlayerLeft", playerId);
+        await CleanupSessionAsync(hub, farmId, playerId);
 
         logger.LogInformation(
             "Player {PlayerId} left farm {FarmId}",
             playerId, farmId);
+    }
+
+    private async Task CleanupSessionAsync(
+            Hub hub,
+        int farmId,
+        int playerId)
+    {
+        string farmGroup = farmId.ToString();
+
+        // Remove transform cache
+        transformService.RemovePlayerTransform(farmId, playerId);
+
+        // Remove DB session
+        await dbCommunicator.RemoveVisitorAsync(farmId, playerId);
+
+        // Remove SignalR group
+        await hub.Groups.RemoveFromGroupAsync(
+            hub.Context.ConnectionId,
+            farmGroup);
+
+        // Notify farm members
+        await hub.Clients.OthersInGroup(farmGroup)
+            .SendAsync("PlayerLeft", playerId);
+
+        // 🔔 BROADCAST FARM LIST UPDATE (CRITICAL)
+        await farmListHub.Clients.All
+            .SendAsync("FarmListUpdated");
     }
 }

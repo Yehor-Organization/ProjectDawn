@@ -65,6 +65,26 @@ public class FarmSessionDBCommunicator
             })
             .ToListAsync();
 
+    // =========================================================
+    // GET VISITOR BY CONNECTION (SAFE LOOKUP)
+    // =========================================================
+    public async Task<VisitorDM?> GetVisitorByConnectionAsync(string connId)
+    {
+        return await db.FarmVisitors
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.ConnectionId == connId);
+    }
+
+    // =========================================================
+    // CHECK IF PLAYER IS STILL IN FARM (IDEMPOTENCY)
+    // =========================================================
+    public async Task<bool> IsPlayerInFarmAsync(int farmId, int playerId)
+    {
+        return await db.FarmVisitors
+            .AnyAsync(v =>
+                v.FarmId == farmId &&
+                v.PlayerId == playerId);
+    }
 
     // =========================================================
     // REMOVE BY CONNECTION (DISCONNECT)

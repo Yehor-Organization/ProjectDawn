@@ -3,20 +3,36 @@
   "WorkspaceRootPath": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\hubs\\player\\playerhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\hubs\\player\\playerhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\hubs\\farm\\farmhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\hubs\\farm\\farmhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\hubs\\hubextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\hubs\\hubextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\dataclasses\\farm\\dtos\\farminfodto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\dataclasses\\farm\\dtos\\farminfodto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\services\\farm\\farmsessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\services\\farm\\farmsessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\dataclasses\\visitor\\visitordm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\dataclasses\\visitor\\visitordm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\dataclasses\\visitor\\visitorsummarydm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\dataclasses\\visitor\\visitorsummarydm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\dbcommunicators\\farm\\farmsessiondbcommunicator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\dbcommunicators\\farm\\farmsessiondbcommunicator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\controllers\\farms\\farmscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\controllers\\farms\\farmscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\hubs\\player\\playerhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\hubs\\player\\playerhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\hubs\\hubextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\hubs\\hubextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\services\\farm\\playertransformationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -51,20 +67,12 @@
       "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\controllers\\players\\playerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\controllers\\farms\\farmscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\controllers\\farms\\farmscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\controllers\\players\\inventorycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\controllers\\players\\inventorycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\hubs\\farm\\farmlisthub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\hubs\\farm\\farmlisthub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|d:\\github\\projectdawn\\projectdawnapi\\projectdawnapi\\src\\dbcommunicators\\farm\\farmsessiondbcommunicator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{104F152E-C428-4162-B1CF-9A164077787B}|ProjectDawnApi\\ProjectDawnApi.csproj|solutionrelative:projectdawnapi\\src\\dbcommunicators\\farm\\farmsessiondbcommunicator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -74,7 +82,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Bookmark",
@@ -86,33 +94,46 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "PlayerHub.cs",
-              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\Player\\PlayerHub.cs",
-              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Hubs\\Player\\PlayerHub.cs",
-              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\Player\\PlayerHub.cs",
-              "RelativeToolTip": "ProjectDawnApi\\Src\\Hubs\\Player\\PlayerHub.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "FarmInfoDTO.cs",
+              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DataClasses\\Farm\\DTOs\\FarmInfoDTO.cs",
+              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\DataClasses\\Farm\\DTOs\\FarmInfoDTO.cs",
+              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DataClasses\\Farm\\DTOs\\FarmInfoDTO.cs",
+              "RelativeToolTip": "ProjectDawnApi\\Src\\DataClasses\\Farm\\DTOs\\FarmInfoDTO.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T08:25:41.168Z",
+              "WhenOpened": "2026-01-09T03:05:19.76Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "JwtAuthenticationExtensions.cs",
-              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Extensions\\JwtAuthenticationExtensions.cs",
-              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Extensions\\JwtAuthenticationExtensions.cs",
-              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Extensions\\JwtAuthenticationExtensions.cs",
-              "RelativeToolTip": "ProjectDawnApi\\Src\\Extensions\\JwtAuthenticationExtensions.cs",
+              "DocumentIndex": 2,
+              "Title": "VisitorDM.cs",
+              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DataClasses\\Visitor\\VisitorDM.cs",
+              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\DataClasses\\Visitor\\VisitorDM.cs",
+              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DataClasses\\Visitor\\VisitorDM.cs",
+              "RelativeToolTip": "ProjectDawnApi\\Src\\DataClasses\\Visitor\\VisitorDM.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T04:41:55.934Z",
+              "WhenOpened": "2026-01-09T03:05:09.082Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 3,
+              "Title": "VisitorSummaryDM.cs",
+              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DataClasses\\Visitor\\VisitorSummaryDM.cs",
+              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\DataClasses\\Visitor\\VisitorSummaryDM.cs",
+              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DataClasses\\Visitor\\VisitorSummaryDM.cs",
+              "RelativeToolTip": "ProjectDawnApi\\Src\\DataClasses\\Visitor\\VisitorSummaryDM.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-09T03:05:07.438Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
               "Title": "EndpointRouteBuilderExtensions.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Extensions\\EndpointRouteBuilderExtensions.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Extensions\\EndpointRouteBuilderExtensions.cs",
@@ -120,38 +141,24 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Extensions\\EndpointRouteBuilderExtensions.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T01:40:48.165Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T01:40:48.165Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "FarmHub.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\Farm\\FarmHub.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Hubs\\Farm\\FarmHub.cs",
-              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\Farm\\FarmHub.cs",
-              "RelativeToolTip": "ProjectDawnApi\\Src\\Hubs\\Farm\\FarmHub.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAAAAAAAAAAAA==",
+              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\Farm\\FarmHub.cs*",
+              "RelativeToolTip": "ProjectDawnApi\\Src\\Hubs\\Farm\\FarmHub.cs*",
+              "ViewState": "AgIAABYAAAAAAAAAAADwvyEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-08T01:32:51.513Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "FarmSessionService.cs",
-              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Services\\Farm\\FarmSessionService.cs",
-              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Services\\Farm\\FarmSessionService.cs",
-              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Services\\Farm\\FarmSessionService.cs",
-              "RelativeToolTip": "ProjectDawnApi\\Src\\Services\\Farm\\FarmSessionService.cs",
-              "ViewState": "AgIAAGsAAAAAAAAAAAA3wH8AAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T06:42:44.352Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 7,
               "Title": "HubExtensions.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\HubExtensions.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Hubs\\HubExtensions.cs",
@@ -159,12 +166,62 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Hubs\\HubExtensions.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T01:37:08.902Z",
+              "WhenOpened": "2026-01-08T01:37:08.902Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "FarmsController.cs",
+              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Controllers\\Farms\\FarmsController.cs",
+              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Controllers\\Farms\\FarmsController.cs",
+              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Controllers\\Farms\\FarmsController.cs",
+              "RelativeToolTip": "ProjectDawnApi\\Src\\Controllers\\Farms\\FarmsController.cs",
+              "ViewState": "AgIAAH8AAAAAAAAAAAAqwJcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-08T01:34:23.53Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 4,
+              "Title": "FarmSessionDBCommunicator.cs",
+              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DBCommunicators\\Farm\\FarmSessionDBCommunicator.cs",
+              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\DBCommunicators\\Farm\\FarmSessionDBCommunicator.cs",
+              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DBCommunicators\\Farm\\FarmSessionDBCommunicator.cs",
+              "RelativeToolTip": "ProjectDawnApi\\Src\\DBCommunicators\\Farm\\FarmSessionDBCommunicator.cs",
+              "ViewState": "AgIAAG8AAAAAAAAAAAAqwHkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-07T00:54:46.03Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "PlayerHub.cs",
+              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\Player\\PlayerHub.cs",
+              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Hubs\\Player\\PlayerHub.cs",
+              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\Player\\PlayerHub.cs",
+              "RelativeToolTip": "ProjectDawnApi\\Src\\Hubs\\Player\\PlayerHub.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAmwAYAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-08T08:25:41.168Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "JwtAuthenticationExtensions.cs",
+              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Extensions\\JwtAuthenticationExtensions.cs",
+              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Extensions\\JwtAuthenticationExtensions.cs",
+              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Extensions\\JwtAuthenticationExtensions.cs",
+              "RelativeToolTip": "ProjectDawnApi\\Src\\Extensions\\JwtAuthenticationExtensions.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-08T04:41:55.934Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
               "Title": "PlayerTransformationService.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Services\\Farm\\PlayerTransformationService.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Services\\Farm\\PlayerTransformationService.cs",
@@ -172,12 +229,11 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Services\\Farm\\PlayerTransformationService.cs",
               "ViewState": "AgIAAHEAAAAAAAAAAAAQwHIAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T07:53:45.316Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T07:53:45.316Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 10,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Program.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Program.cs",
@@ -185,12 +241,11 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Program.cs",
               "ViewState": "AgIAAGQAAAAAAAAAAAAqwIgAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T04:43:25.825Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T04:43:25.825Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 12,
               "Title": "SwaggerSecurityExtensions.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Extensions\\SwaggerSecurityExtensions.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Extensions\\SwaggerSecurityExtensions.cs",
@@ -198,12 +253,11 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Extensions\\SwaggerSecurityExtensions.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAjAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T05:05:13.537Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T05:05:13.537Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 14,
               "Title": "SwaggerAuthExtensions.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Extensions\\SwaggerAuthExtensions.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Extensions\\SwaggerAuthExtensions.cs",
@@ -211,12 +265,11 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Extensions\\SwaggerAuthExtensions.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T05:05:43.459Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T05:05:43.459Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 9,
               "Title": "ServiceCollectionExtensions.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Extensions\\ServiceCollectionExtensions.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Extensions\\ServiceCollectionExtensions.cs",
@@ -224,12 +277,11 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Extensions\\ServiceCollectionExtensions.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T05:05:44.309Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T05:05:44.309Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 16,
               "Title": "InventoryController.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Controllers\\Players\\InventoryController.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Controllers\\Players\\InventoryController.cs",
@@ -237,12 +289,11 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Controllers\\Players\\InventoryController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T04:45:41.052Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T04:45:41.052Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 15,
               "Title": "PlayersController.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Controllers\\Players\\PlayersController.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Controllers\\Players\\PlayersController.cs",
@@ -250,12 +301,11 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Controllers\\Players\\PlayersController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T04:11:02.114Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-08T04:11:02.114Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 17,
               "Title": "FarmListHub.cs",
               "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Hubs\\Farm\\FarmListHub.cs",
               "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Hubs\\Farm\\FarmListHub.cs",
@@ -263,33 +313,7 @@
               "RelativeToolTip": "ProjectDawnApi\\Src\\Hubs\\Farm\\FarmListHub.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T01:39:11.409Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "FarmsController.cs",
-              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Controllers\\Farms\\FarmsController.cs",
-              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\Controllers\\Farms\\FarmsController.cs",
-              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\Controllers\\Farms\\FarmsController.cs",
-              "RelativeToolTip": "ProjectDawnApi\\Src\\Controllers\\Farms\\FarmsController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-08T01:34:23.53Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 15,
-              "Title": "FarmSessionDBCommunicator.cs",
-              "DocumentMoniker": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DBCommunicators\\Farm\\FarmSessionDBCommunicator.cs",
-              "RelativeDocumentMoniker": "ProjectDawnApi\\Src\\DBCommunicators\\Farm\\FarmSessionDBCommunicator.cs",
-              "ToolTip": "D:\\GitHub\\ProjectDawn\\ProjectDawnApi\\ProjectDawnApi\\Src\\DBCommunicators\\Farm\\FarmSessionDBCommunicator.cs",
-              "RelativeToolTip": "ProjectDawnApi\\Src\\DBCommunicators\\Farm\\FarmSessionDBCommunicator.cs",
-              "ViewState": "AgIAAD0AAAAAAAAAAAAkwEIAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-07T00:54:46.03Z"
+              "WhenOpened": "2026-01-08T01:39:11.409Z"
             }
           ]
         }
