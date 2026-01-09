@@ -3,6 +3,10 @@ name: Publish
 on:
   workflow_dispatch:
 
+# 🔑 IMPORTANT: license must be global
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
 jobs:
   publish:
     name: Publish Unity Builds
@@ -20,11 +24,17 @@ jobs:
             buildMethod: CIBuilder.BuildAndroid
 
     steps:
+      # -----------------------------
+      # Checkout repo (with LFS)
+      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
 
+      # -----------------------------
+      # Free disk space (SAFE)
+      # -----------------------------
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -33,6 +43,9 @@ jobs:
           sudo apt-get clean
           df -h
 
+      # -----------------------------
+      # Cache Unity Library
+      # -----------------------------
       - name: Cache Library
         uses: actions/cache@v4
         with:
@@ -41,33 +54,19 @@ jobs:
           restore-keys: |
             Library-
 
-      - name: Read Unity version
-        id: unity-version
-        run: |
-          VERSION=$(grep '^m_EditorVersion:' ProjectDawn/ProjectSettings/ProjectVersion.txt | cut -d ':' -f2 | tr -d ' ')
-          echo "Unity version detected: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Verify Unity License
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        run: |
-          if [ -z "$UNITY_LICENSE" ]; then
-            echo "❌ UNITY_LICENSE is not set"
-            exit 1
-          fi
-          echo "✅ UNITY_LICENSE is set (${#UNITY_LICENSE} characters)"
-
+      # -----------------------------
+      # Build Unity (ULF, auto version)
+      # -----------------------------
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           projectPath: ProjectDawn
-          unityVersion: ${{ steps.unity-version.outputs.version }}
           targetPlatform: ${{ matrix.targetPlatform }}
           buildMethod: ${{ matrix.buildMethod }}
 
+      # -----------------------------
+      # Upload artifacts
+      # -----------------------------
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
