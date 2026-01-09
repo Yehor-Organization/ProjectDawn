@@ -3,10 +3,6 @@ name: Publish
 on:
   workflow_dispatch:
 
-# 🔑 IMPORTANT: license must be global
-env:
-  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-
 jobs:
   publish:
     name: Publish Unity Builds
@@ -24,17 +20,11 @@ jobs:
             buildMethod: CIBuilder.BuildAndroid
 
     steps:
-      # -----------------------------
-      # Checkout repo (with LFS)
-      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      # -----------------------------
-      # Free disk space (SAFE)
-      # -----------------------------
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -43,9 +33,6 @@ jobs:
           sudo apt-get clean
           df -h
 
-      # -----------------------------
-      # Cache Unity Library
-      # -----------------------------
       - name: Cache Library
         uses: actions/cache@v4
         with:
@@ -54,19 +41,17 @@ jobs:
           restore-keys: |
             Library-
 
-      # -----------------------------
-      # Build Unity (ULF, auto version)
-      # -----------------------------
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           projectPath: ProjectDawn
           targetPlatform: ${{ matrix.targetPlatform }}
           buildMethod: ${{ matrix.buildMethod }}
 
-      # -----------------------------
-      # Upload artifacts
-      # -----------------------------
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
