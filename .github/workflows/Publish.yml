@@ -29,6 +29,18 @@ jobs:
           lfs: true
 
       # -----------------------------
+      # FREE DISK SPACE (REQUIRED)
+      # -----------------------------
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          df -h
+
+      # -----------------------------
       # Cache Unity Library
       # -----------------------------
       - name: Cache Library
@@ -51,7 +63,7 @@ jobs:
           echo "✅ ULF-based activation mode"
 
       # -----------------------------
-      # Build Unity (ULF METHOD)
+      # Build Unity (ULF)
       # -----------------------------
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
