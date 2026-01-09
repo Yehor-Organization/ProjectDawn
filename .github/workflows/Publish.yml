@@ -2,22 +2,19 @@ name: Publish
 
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: "Select platform to build"
+        required: true
+        type: choice
+        options:
+          - windows
+          - android
 
 jobs:
   publish:
-    name: Publish Unity Builds
+    name: Publish Unity Build
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: windows
-            targetPlatform: StandaloneWindows64
-            buildMethod: CIBuilder.BuildWindows
-          - name: android
-            targetPlatform: Android
-            buildMethod: CIBuilder.BuildAndroid
 
     steps:
       - name: Checkout
@@ -33,11 +30,11 @@ jobs:
           sudo apt-get clean
           df -h
 
-      - name: Cache Library
+      - name: Cache Unity Library
         uses: actions/cache@v4
         with:
           path: ProjectDawn/Library
-          key: Library-${{ matrix.name }}
+          key: Library-${{ github.event.inputs.platform }}
           restore-keys: |
             Library-
 
@@ -49,11 +46,11 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           projectPath: ProjectDawn
-          targetPlatform: ${{ matrix.targetPlatform }}
-          buildMethod: ${{ matrix.buildMethod }}
+          targetPlatform: ${{ github.event.inputs.platform == 'windows' && 'StandaloneWindows64' || 'Android' }}
+          buildMethod: ${{ github.event.inputs.platform == 'windows' && 'CIBuilder.BuildWindows' || 'CIBuilder.BuildAndroid' }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}
+          name: ${{ github.event.inputs.platform }}
           path: ProjectDawn/Builds/
