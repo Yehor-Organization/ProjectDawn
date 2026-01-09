@@ -1,5 +1,9 @@
 name: Publish
 
+concurrency:
+  group: unity-build
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:
@@ -16,7 +20,7 @@ on:
       version_bump:
         description: "Version bump"
         required: true
-        default: x.x.1  
+        default: x.x.1
         type: choice
         options:
           - none
