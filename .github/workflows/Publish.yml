@@ -20,17 +20,11 @@ jobs:
             buildMethod: CIBuilder.BuildAndroid
 
     steps:
-      # -----------------------------
-      # Checkout repo (with LFS)
-      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      # -----------------------------
-      # Free disk space (SAFE)
-      # -----------------------------
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -39,9 +33,6 @@ jobs:
           sudo apt-get clean
           df -h
 
-      # -----------------------------
-      # Cache Unity Library
-      # -----------------------------
       - name: Cache Library
         uses: actions/cache@v4
         with:
@@ -50,19 +41,13 @@ jobs:
           restore-keys: |
             Library-
 
-      # -----------------------------
-      # Read Unity version from project
-      # -----------------------------
       - name: Read Unity version
         id: unity-version
         run: |
-          VERSION=$(grep m_EditorVersion ProjectDawn/ProjectSettings/ProjectVersion.txt | cut -d ':' -f2 | tr -d ' ')
+          VERSION=$(grep '^m_EditorVersion:' ProjectDawn/ProjectSettings/ProjectVersion.txt | cut -d ':' -f2 | tr -d ' ')
           echo "Unity version detected: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # -----------------------------
-      # Verify license is set
-      # -----------------------------
       - name: Verify Unity License
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -73,9 +58,6 @@ jobs:
           fi
           echo "✅ UNITY_LICENSE is set (${#UNITY_LICENSE} characters)"
 
-      # -----------------------------
-      # Build Unity (ULF)
-      # -----------------------------
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
         env:
@@ -86,9 +68,6 @@ jobs:
           targetPlatform: ${{ matrix.targetPlatform }}
           buildMethod: ${{ matrix.buildMethod }}
 
-      # -----------------------------
-      # Upload artifacts
-      # -----------------------------
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
