@@ -10,9 +10,13 @@ jobs:
 
     strategy:
       matrix:
-        target:
-          - windows
-          - android
+        include:
+          - name: windows
+            targetPlatform: StandaloneWindows64
+            buildMethod: CIBuilder.BuildWindows
+          - name: android
+            targetPlatform: Android
+            buildMethod: CIBuilder.BuildAndroid
 
     steps:
       - uses: actions/checkout@v4
@@ -33,10 +37,10 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           projectPath: ProjectDawn
-          targetPlatform: ${{ matrix.target == 'windows' && 'StandaloneWindows64' || 'Android' }}
-          buildMethod: ${{ matrix.target == 'windows' && 'CIBuilder.BuildWindows' || 'CIBuilder.BuildAndroid' }}
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildMethod: ${{ matrix.buildMethod }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
+          name: ${{ matrix.name }}
           path: ProjectDawn/Builds/
