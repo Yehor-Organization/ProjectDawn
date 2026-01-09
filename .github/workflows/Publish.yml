@@ -1,13 +1,12 @@
 name: Publish
-
 on:
   workflow_dispatch:
-
 jobs:
   publish:
     name: Publish Unity Builds
     runs-on: ubuntu-latest
-
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
     strategy:
       fail-fast: false
       matrix:
@@ -18,7 +17,6 @@ jobs:
           - name: android
             targetPlatform: Android
             buildMethod: CIBuilder.BuildAndroid
-
     steps:
       # -----------------------------
       # Checkout repo (with LFS)
@@ -27,7 +25,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
-
       # -----------------------------
       # FREE DISK SPACE (REQUIRED)
       # -----------------------------
@@ -39,7 +36,6 @@ jobs:
           sudo rm -rf /usr/local/share/boost
           sudo apt-get clean
           df -h
-
       # -----------------------------
       # Cache Unity Library
       # -----------------------------
@@ -50,30 +46,25 @@ jobs:
           key: Library-${{ matrix.name }}
           restore-keys: |
             Library-
-
       # -----------------------------
-      # Sanity check (ULF mode)
+      # Verify license is set
       # -----------------------------
-      - name: Sanity check Unity env
+      - name: Verify Unity License
         run: |
-          if env | grep -E "UNITY_EMAIL|UNITY_PASSWORD|UNITY_SERIAL"; then
-            echo "❌ Login-based Unity vars detected. Remove them."
+          if [ -z "$UNITY_LICENSE" ]; then
+            echo "❌ UNITY_LICENSE is not set"
             exit 1
           fi
-          echo "✅ ULF-based activation mode"
-
+          echo "✅ UNITY_LICENSE is set (${#UNITY_LICENSE} characters)"
       # -----------------------------
       # Build Unity (ULF)
       # -----------------------------
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           projectPath: ProjectDawn
           targetPlatform: ${{ matrix.targetPlatform }}
           buildMethod: ${{ matrix.buildMethod }}
-
       # -----------------------------
       # Upload artifacts
       # -----------------------------
