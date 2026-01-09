@@ -14,15 +14,15 @@ on:
           - android
 
       version_bump:
-        description: "Version bump type"
+        description: "Version bump"
         required: true
         default: none
         type: choice
         options:
           - none
-          - patch     # x.x.1
-          - minor     # x.1.0
-          - major     # 1.0.0
+          - x.x.1
+          - x.1.0
+          - 1.0.0
 
 jobs:
 # ==================================================
@@ -50,30 +50,30 @@ jobs:
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 
-          BUMP="${{ github.event.inputs.version_bump }}"
+          MODE="${{ github.event.inputs.version_bump }}"
           BUMPED=false
 
-          case "$BUMP" in
-            patch)
+          case "$MODE" in
+            "x.x.1")
               PATCH=$((PATCH + 1))
               BUMPED=true
               ;;
-            minor)
+            "x.1.0")
               MINOR=$((MINOR + 1))
               PATCH=0
               BUMPED=true
               ;;
-            major)
+            "1.0.0")
               MAJOR=$((MAJOR + 1))
               MINOR=0
               PATCH=0
               BUMPED=true
               ;;
-            none)
+            "none")
               echo "Skipping version bump"
               ;;
             *)
-              echo "Invalid bump type"
+              echo "Invalid version bump option: $MODE"
               exit 1
               ;;
           esac
