@@ -30,7 +30,7 @@ jobs:
       - name: Build Unity Player
         uses: game-ci/unity-builder@v4
         env:
-          UNITY_LICENSING_SERVER: https://license.unity3d.com
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           projectPath: ProjectDawn
           targetPlatform: ${{ matrix.target == 'windows' && 'StandaloneWindows64' || 'Android' }}
