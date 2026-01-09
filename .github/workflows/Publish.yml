@@ -84,11 +84,6 @@ jobs:
         with:
           lfs: true
 
-      - uses: actions/cache@v4
-        with:
-          path: ProjectDawn/Library
-          key: Library-windows
-
       - name: Reset Unity Library (avoid permission issues)
         run: |
           rm -rf ProjectDawn/Library
@@ -116,11 +111,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-
-      - uses: actions/cache@v4
-        with:
-          path: ProjectDawn/Library
-          key: Library-android
 
       - name: Reset Unity Library (avoid permission issues)
         run: |
