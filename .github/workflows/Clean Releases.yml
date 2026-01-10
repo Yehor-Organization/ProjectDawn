@@ -109,3 +109,9 @@ jobs:
               git push origin --delete "$tag" || true
             fi
           done
+
+          
+      - name: 🚨 Fail intentionally
+        run: |
+          echo "::error title=Intentional Failure::This workflow failed on purpose for cleanup testing"
+          exit 1
