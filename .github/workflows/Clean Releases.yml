@@ -3,6 +3,10 @@ name: Clean Releases
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write   # REQUIRED for deleting tags
+  actions: write
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
@@ -13,12 +17,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      # =============================
+      # AUTH GH CLI EXPLICITLY
+      # =============================
+      - name: Authenticate gh
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      # =============================
+      # KEEP HIGHEST PATCH PER MAJOR.MINOR
+      # =============================
       - name: Keep highest patch per major.minor and delete the rest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
 
           echo "📦 Fetching release tags..."
           tags=$(gh release list \
@@ -29,46 +41,36 @@ jobs:
 
           declare -A keep_tag
 
-          # Determine highest patch for each major.minor
           for tag in $tags; do
-            tag=${tag//\"/}
-
             if [[ "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
               major="${BASH_REMATCH[1]}"
               minor="${BASH_REMATCH[2]}"
               patch="${BASH_REMATCH[3]}"
               key="${major}.${minor}"
 
-              existing="${keep_tag[$key]}"
-
+              existing="${keep_tag[$key]:-}"
               if [[ -z "$existing" ]]; then
                 keep_tag[$key]="$tag"
               else
-                if [[ "$existing" =~ ^v${major}\.${minor}\.([0-9]+)$ ]]; then
-                  existing_patch="${BASH_REMATCH[1]}"
-                  if (( patch > existing_patch )); then
-                    keep_tag[$key]="$tag"
-                  fi
-                fi
+                [[ "$existing" =~ ^v${major}\.${minor}\.([0-9]+)$ ]]
+                existing_patch="${BASH_REMATCH[1]}"
+                (( patch > existing_patch )) && keep_tag[$key]="$tag"
               fi
             fi
           done
 
           echo ""
-          echo "✅ Keeping:"
+          echo "✅ Keeping releases:"
           for t in "${keep_tag[@]}"; do
             echo "  • $t"
           done
 
           echo ""
           echo "🗑️ Deleting old patch releases..."
-
           for tag in $tags; do
-            tag=${tag//\"/}
             keep=false
-
-            for kept in "${keep_tag[@]}"; do
-              [[ "$tag" == "$kept" ]] && keep=true && break
+            for k in "${keep_tag[@]}"; do
+              [[ "$tag" == "$k" ]] && keep=true && break
             done
 
             if [[ "$keep" == false ]]; then
@@ -78,12 +80,13 @@ jobs:
             fi
           done
 
+      # =============================
+      # DELETE ORPHAN TAGS (NO RELEASE)
+      # =============================
       - name: Delete orphan tags (no GitHub release)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
 
           git fetch --tags
 
@@ -100,7 +103,6 @@ jobs:
           for tag in $all_tags; do
             found=false
             for r in $release_tags; do
-              r=${r//\"/}
               [[ "$tag" == "$r" ]] && found=true && break
             done
 
@@ -110,8 +112,10 @@ jobs:
             fi
           done
 
-          
+      # =============================
+      # INTENTIONAL FAILURE
+      # =============================
       - name: 🚨 Fail intentionally
         run: |
-          echo "::error title=Intentional Failure::This workflow failed on purpose for cleanup testing"
+          echo "::error title=Intentional Failure::Cleanup workflow failed on purpose"
           exit 1
