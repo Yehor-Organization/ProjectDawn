@@ -113,7 +113,7 @@ jobs:
 # ==================================================
   release:
     needs: [version, buildForAllSupportedPlatforms]
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-lastest
     if: always()
 
     steps:
