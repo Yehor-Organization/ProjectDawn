@@ -114,7 +114,6 @@ jobs:
   release:
     needs: [version, buildForAllSupportedPlatforms]
     runs-on: ubuntu-lastest
-    if: always()
 
     steps:
       - uses: actions/download-artifact@v4
