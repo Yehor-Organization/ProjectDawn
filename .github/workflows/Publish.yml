@@ -6,7 +6,6 @@ env:
 on:
   workflow_dispatch:
     inputs:
-      platform:
 
       version_bump:
         description: "Version bump"
