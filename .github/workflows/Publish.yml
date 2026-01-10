@@ -132,7 +132,7 @@ jobs:
 # RELEASE (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   release:
-    needs: [version, linux, android]
+    needs: [version, windows, android]
     runs-on: [self-hosted, linux, x64]
     if: always()
 
