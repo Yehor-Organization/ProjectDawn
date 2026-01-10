@@ -69,12 +69,12 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { targetPlatform: "StandaloneWindows64", profilePath: "Assets/Settings/Build Profiles/windows-rel.asset", label: "windows-rel" }
-          - { targetPlatform: "StandaloneWindows64", profilePath: "Assets/Settings/Build Profiles/windows-dev.asset", label: "windows-dev" }
-          - { targetPlatform: "StandaloneLinux64", profilePath: "Assets/Settings/Build Profiles/linux-rel.asset", label: "linux-rel" }
-          - { targetPlatform: "StandaloneLinux64", profilePath: "Assets/Settings/Build Profiles/linux-dev.asset", label: "linux-dev" }
-          - { targetPlatform: "WebGL", profilePath: "Assets/Settings/Build Profiles/web-rel.asset", label: "web-rel" }
-          - { targetPlatform: "WebGL", profilePath: "Assets/Settings/Build Profiles/web-dev.asset", label: "web-dev" }
+          - { targetPlatform: "StandaloneWindows64", label: "windows-rel" }
+          - { targetPlatform: "StandaloneWindows64", label: "windows-dev" }
+          - { targetPlatform: "StandaloneLinux64", label: "linux-rel" }
+          - { targetPlatform: "StandaloneLinux64", label: "linux-dev" }
+          - { targetPlatform: "WebGL", label: "web-rel" }
+          - { targetPlatform: "WebGL", label: "web-dev" }
 
     steps:
       - name: Checkout repository
@@ -98,7 +98,6 @@ jobs:
         with:
           projectPath: ${{ env.PROJECT_PATH }}
           targetPlatform: ${{ matrix.config.targetPlatform }}
-          buildProfile: ${{ matrix.config.profilePath }}
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
