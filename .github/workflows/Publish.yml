@@ -1,7 +1,7 @@
 name: Publish
 
 env:
-  PROJECT_PATH: unity_project
+  PROJECT_PATH: ProjectDawn
 
 on:
   workflow_dispatch:
