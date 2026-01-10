@@ -26,7 +26,7 @@ jobs:
 # VERSION BUMP (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   version:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, Windows, x64]
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
@@ -77,7 +77,7 @@ jobs:
   windows:
     needs: version
     if: github.event.inputs.platform != 'android'
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, Windows, x64]
 
     steps:
       - uses: actions/checkout@v4
@@ -105,7 +105,7 @@ jobs:
   android:
     needs: windows
     if: github.event.inputs.platform != 'windows'
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, Windows, x64]
 
     steps:
       - uses: actions/checkout@v4
@@ -132,7 +132,7 @@ jobs:
 # RELEASE (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   release:
-    needs: [version, windows, android]
+    needs: [version, Windows, android]
     runs-on: [self-hosted, linux, x64]
     if: always()
 
