@@ -1,5 +1,9 @@
 name: Publish
 
+concurrency:
+  group: unity-build
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:
@@ -22,7 +26,7 @@ jobs:
 # VERSION BUMP (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   version:
-    runs-on: [self-hosted, Windows, x64]
+    runs-on: [self-hosted, linux, x64]
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
@@ -32,15 +36,14 @@ jobs:
 
       - name: Bump Unity bundleVersion
         id: bump
-        shell: bash
         run: |
           FILE="ProjectDawn/ProjectSettings/ProjectSettings.asset"
           CURRENT=$(grep -m1 "bundleVersion:" "$FILE" | awk '{print $2}')
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-      
+
           MODE="${{ github.event.inputs.version_bump }}"
           BUMPED=false
-      
+
           case "$MODE" in
             x.x.1) PATCH=$((PATCH+1)); BUMPED=true ;;
             x.1.0) MINOR=$((MINOR+1)); PATCH=0; BUMPED=true ;;
@@ -48,16 +51,24 @@ jobs:
             none) ;;
             *) exit 1 ;;
           esac
-      
+
           NEW="$MAJOR.$MINOR.$PATCH"
-      
+
           if [ "$BUMPED" = true ]; then
             sed -i "s/bundleVersion:.*/bundleVersion: $NEW/" "$FILE"
           fi
-      
+
           echo "version=$NEW" >> $GITHUB_OUTPUT
           echo "bumped=$BUMPED" >> $GITHUB_OUTPUT
-      
+
+      - name: Commit version bump
+        if: steps.bump.outputs.bumped == 'true'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add ProjectDawn/ProjectSettings/ProjectSettings.asset
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}"
+          git push
 
 # ==================================================
 # WINDOWS BUILD
@@ -66,7 +77,7 @@ jobs:
   windows:
     needs: version
     if: github.event.inputs.platform != 'android'
-    runs-on: [self-hosted, Windows, x64]
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/checkout@v4
@@ -94,7 +105,7 @@ jobs:
   android:
     needs: windows
     if: github.event.inputs.platform != 'windows'
-    runs-on: [self-hosted, Windows, x64]
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/checkout@v4
@@ -121,7 +132,7 @@ jobs:
 # RELEASE (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   release:
-    needs: [version, Windows, android]
+    needs: [version, linux, android]
     runs-on: [self-hosted, linux, x64]
     if: always()
 
