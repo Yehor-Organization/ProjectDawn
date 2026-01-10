@@ -5,7 +5,7 @@ on:
 
 jobs:
   delete-runs:
-    runs-on: ubuntu-linux
+    runs-on: ubuntu-latest
 
     steps:
       - name: Delete all workflow runs
