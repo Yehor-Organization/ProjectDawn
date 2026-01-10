@@ -1,9 +1,5 @@
 name: Publish
 
-concurrency:
-  group: unity-build
-  cancel-in-progress: false
-
 on:
   workflow_dispatch:
     inputs:
@@ -21,28 +17,30 @@ on:
         type: choice
         options: [none, x.x.1, x.1.0, 1.0.0]
 
-jobs:
-# ==================================================
-# VERSION BUMP (SINGLE SOURCE OF TRUTH)
-# ==================================================
-  version:
-    name: Version bump
-    runs-on: [self-hosted, linux, x64]
+concurrency:
+  group: unity-build
+  cancel-in-progress: false
 
+permissions:
+  contents: write
+
+# ==================================================
+# VERSION BUMP (NO UNITY)
+# ==================================================
+jobs:
+  version:
+    runs-on: linux-latest
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Bump Unity bundleVersion
         id: bump
         run: |
           FILE="ProjectDawn/ProjectSettings/ProjectSettings.asset"
-
           CURRENT=$(grep -m1 "bundleVersion:" "$FILE" | awk '{print $2}')
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 
@@ -63,8 +61,8 @@ jobs:
             sed -i "s/bundleVersion:.*/bundleVersion: $NEW/" "$FILE"
           fi
 
-          echo "version=$NEW" >> "$GITHUB_OUTPUT"
-          echo "bumped=$BUMPED" >> "$GITHUB_OUTPUT"
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+          echo "bumped=$BUMPED" >> $GITHUB_OUTPUT
 
       - name: Commit version bump
         if: steps.bump.outputs.bumped == 'true'
@@ -76,89 +74,66 @@ jobs:
           git push
 
 # ==================================================
-# WINDOWS BUILD
+# MATRIX BUILD (WINDOWS + ANDROID)
 # ==================================================
-  windows:
-    name: Build Windows
+  build:
     needs: version
-    if: github.event.inputs.platform != 'android'
-    runs-on: [self-hosted, linux, x64]
+    runs-on: linux-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            targetPlatform: StandaloneWindows64
+          - platform: android
+            targetPlatform: Android
+
+    # Respect platform selector
+    if: >
+      github.event.inputs.platform == 'all' ||
+      github.event.inputs.platform == matrix.platform
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           lfs: true
 
-      - name: Hard clean Unity workspace
-        run: |
-          rm -rf ProjectDawn/Library
-          rm -rf ProjectDawn/Temp
-          rm -rf ProjectDawn/Obj
-          rm -rf ProjectDawn/Logs
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: ProjectDawn/Library
+          key: Library-${{ matrix.platform }}
 
-      - name: Clean Unity Builder cache
-        run: |
-          rm -rf ~/.cache/unity3d
-          rm -rf ~/.cache/game-ci
-
-      - uses: game-ci/unity-builder@v4
+      - name: Build ${{ matrix.platform }}
+        uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_BUILDER_DOCKER_USER: "${{ runner.uid }}:${{ runner.gid }}"
         with:
           projectPath: ProjectDawn
-          targetPlatform: StandaloneWindows64
-          buildMethod: CIBuilder.BuildWindows
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildMethod: >
+            ${{ matrix.platform == 'windows'
+                && 'CIBuilder.BuildWindows'
+                || 'CIBuilder.BuildAndroid' }}
           docker: false
 
-# ==================================================
-# ANDROID BUILD
-# ==================================================
-  android:
-    name: Build Android
-    needs: version
-    if: github.event.inputs.platform != 'windows'
-    runs-on: [self-hosted, linux, x64]
-
-    steps:
-      - uses: actions/checkout@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          fetch-depth: 0
-          lfs: true
-
-      - name: Hard clean Unity workspace
-        run: |
-          rm -rf ProjectDawn/Library
-          rm -rf ProjectDawn/Temp
-          rm -rf ProjectDawn/Obj
-          rm -rf ProjectDawn/Logs
-
-      - name: Clean Unity Builder cache
-        run: |
-          rm -rf ~/.cache/unity3d
-          rm -rf ~/.cache/game-ci
-
-      - uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          projectPath: ProjectDawn
-          targetPlatform: Android
-          buildMethod: CIBuilder.BuildAndroid
-          docker: false
+          name: ${{ matrix.platform }}
+          path: ProjectDawn/Builds/
 
 # ==================================================
-# RELEASE (NO UNITY)
+# RELEASE
 # ==================================================
   release:
-    name: Create Release
-    needs: [version, windows, android]
+    needs: [version, build]
+    runs-on: linux-latest
     if: always()
-    runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/download-artifact@v4
@@ -173,5 +148,3 @@ jobs:
           files: |
             dist/windows/**
             dist/android/**
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
