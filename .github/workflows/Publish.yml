@@ -19,7 +19,7 @@ jobs:
 # VERSION BUMP
 # ==================================================
   version:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
@@ -62,6 +62,7 @@ jobs:
 # ==================================================
           
   buildForAllSupportedPlatforms:
+    needs: [version]
     name: Building ${{ matrix.config.label }}
     runs-on: ubuntu-latest
     strategy:
