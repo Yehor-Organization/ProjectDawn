@@ -10,13 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Delete non-successful workflow runs
+      - name: Delete non-successful workflow runs (including this workflow)
         uses: Mattraks/delete-workflow-runs@v2.0.6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+          # Delete EVERYTHING non-successful
           retain_days: 0
           keep_minimum_runs: 0
+
+          # 👇 IMPORTANT: target THIS workflow file too
+          workflow: Delete Failed & Cancelled Workflow Runs
 
           delete_run_by_conclusion_pattern: |
             failure
