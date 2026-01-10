@@ -1,9 +1,5 @@
 name: Publish
 
-concurrency:
-  group: unity-build
-  cancel-in-progress: false
-
 on:
   workflow_dispatch:
     inputs:
