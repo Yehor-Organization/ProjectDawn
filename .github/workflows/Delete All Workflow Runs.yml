@@ -19,9 +19,6 @@ jobs:
           retain_days: 0
           keep_minimum_runs: 0
 
-          # 👇 IMPORTANT: target THIS workflow file too
-          workflow: Delete Failed & Cancelled Workflow Runs
-
           delete_run_by_conclusion_pattern: |
             failure
             cancelled
@@ -29,3 +26,8 @@ jobs:
             timed_out
             neutral
             action_required
+            
+      - name: 🚨 Fail intentionally
+        run: |
+          echo "::error title=Intentional Failure::This workflow failed on purpose for cleanup testing"
+          exit 1
