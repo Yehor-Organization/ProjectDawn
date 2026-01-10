@@ -126,21 +126,22 @@ jobs:
       - name: Package build artifacts
         run: |
           mkdir -p packaged
-
+      
           case "${{ matrix.config.platform }}" in
             StandaloneWindows64)
-              zip -r packaged/ProjectDawn-${{ matrix.config.label }}.zip ProjectDawn/Builds/StandaloneWindows64
+              zip -r packaged/ProjectDawn-${{ matrix.config.label }}.zip build/StandaloneWindows64
               ;;
             StandaloneLinux64)
-              zip -r packaged/ProjectDawn-${{ matrix.config.label }}.zip ProjectDawn/Builds/StandaloneLinux64
+              zip -r packaged/ProjectDawn-${{ matrix.config.label }}.zip build/StandaloneLinux64
               ;;
             WebGL)
-              zip -r packaged/ProjectDawn-${{ matrix.config.label }}.zip ProjectDawn/Builds/WebGL
+              zip -r packaged/ProjectDawn-${{ matrix.config.label }}.zip build/WebGL
               ;;
             Android)
-              cp ProjectDawn/Builds/Android/*.apk packaged/
+              cp build/Android/*.apk packaged/
               ;;
           esac
+
 
       - name: Upload packaged artifacts
         uses: actions/upload-artifact@v4
