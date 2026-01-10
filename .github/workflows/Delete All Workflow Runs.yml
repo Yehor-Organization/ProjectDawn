@@ -5,19 +5,23 @@ on:
 
 jobs:
   delete-runs:
+    permissions:
+      actions: write
     runs-on: ubuntu-latest
 
     steps:
-      - name: Delete failed and cancelled workflow runs
+      - name: Delete non-successful workflow runs
         uses: Mattraks/delete-workflow-runs@v2.0.6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-          # DO NOT keep by age/count
           retain_days: 0
           keep_minimum_runs: 0
 
-          # ✅ FILTERS
           delete_run_by_conclusion_pattern: |
             failure
             cancelled
+            skipped
+            timed_out
+            neutral
+            action_required
