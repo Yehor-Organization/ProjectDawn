@@ -17,10 +17,6 @@ on:
         type: choice
         options: [none, x.x.1, x.1.0, 1.0.0]
 
-concurrency:
-  group: unity-build
-  cancel-in-progress: false
-
 permissions:
   contents: write
 
@@ -29,7 +25,7 @@ permissions:
 # ==================================================
 jobs:
   version:
-    runs-on: linux-latest
+    runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
@@ -78,7 +74,7 @@ jobs:
 # ==================================================
   build:
     needs: version
-    runs-on: linux-latest
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
@@ -132,7 +128,7 @@ jobs:
 # ==================================================
   release:
     needs: [version, build]
-    runs-on: linux-latest
+    runs-on: ubuntu-latest
     if: always()
 
     steps:
