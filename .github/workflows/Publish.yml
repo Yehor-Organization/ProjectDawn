@@ -7,11 +7,6 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: "Select platform to build"
-        required: true
-        default: all
-        type: choice
-        options: [all, windows, android]
 
       version_bump:
         description: "Version bump"
