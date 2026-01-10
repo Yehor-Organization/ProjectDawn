@@ -1,16 +1,23 @@
-name: Delete All Workflow Runs
+name: Delete Failed & Cancelled Workflow Runs
 
 on:
-  workflow_dispatch: # Run manually from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   delete-runs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Delete all workflow runs
+      - name: Delete failed and cancelled workflow runs
         uses: Mattraks/delete-workflow-runs@v2.0.6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+          # DO NOT keep by age/count
           retain_days: 0
           keep_minimum_runs: 0
+
+          # ✅ FILTERS
+          delete_run_by_conclusion_pattern: |
+            failure
+            cancelled
