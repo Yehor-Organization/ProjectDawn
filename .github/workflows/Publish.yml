@@ -73,8 +73,8 @@ jobs:
           - { targetPlatform: "StandaloneWindows64", label: "windows-dev" }
           - { targetPlatform: "StandaloneLinux64",  label: "linux-rel" }
           - { targetPlatform: "StandaloneLinux64",  label: "linux-dev" }
-          - { targetPlatform: "WebGL",              label: "web-rel" }
-          - { targetPlatform: "WebGL",              label: "web-dev" }
+          # - { targetPlatform: "WebGL",              label: "web-rel" }
+          # - { targetPlatform: "WebGL",              label: "web-dev" }
           - { targetPlatform: "Android",             label: "android-rel" }
           - { targetPlatform: "Android",             label: "android-dev" }
 
