@@ -1,5 +1,9 @@
 name: Publish
 
+concurrency:
+  group: unity-build
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:
@@ -17,15 +21,12 @@ on:
         type: choice
         options: [none, x.x.1, x.1.0, 1.0.0]
 
-permissions:
-  contents: write
-
-# ==================================================
-# VERSION BUMP (NO UNITY)
-# ==================================================
 jobs:
+# ==================================================
+# VERSION BUMP
+# ==================================================
   version:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
@@ -39,10 +40,8 @@ jobs:
           FILE="ProjectDawn/ProjectSettings/ProjectSettings.asset"
           CURRENT=$(grep -m1 "bundleVersion:" "$FILE" | awk '{print $2}')
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-
           MODE="${{ github.event.inputs.version_bump }}"
           BUMPED=false
-
           case "$MODE" in
             x.x.1) PATCH=$((PATCH+1)); BUMPED=true ;;
             x.1.0) MINOR=$((MINOR+1)); PATCH=0; BUMPED=true ;;
@@ -50,16 +49,12 @@ jobs:
             none) ;;
             *) exit 1 ;;
           esac
-
           NEW="$MAJOR.$MINOR.$PATCH"
-
           if [ "$BUMPED" = true ]; then
             sed -i "s/bundleVersion:.*/bundleVersion: $NEW/" "$FILE"
           fi
-
           echo "version=$NEW" >> $GITHUB_OUTPUT
           echo "bumped=$BUMPED" >> $GITHUB_OUTPUT
-
       - name: Commit version bump
         if: steps.bump.outputs.bumped == 'true'
         run: |
@@ -70,65 +65,62 @@ jobs:
           git push
 
 # ==================================================
-# MATRIX BUILD (WINDOWS + ANDROID)
+# Build
 # ==================================================
-  build:
-    needs: version
+          
+  buildForAllSupportedPlatforms:
+    name: Building ${{ matrix.config.label }}
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: windows
-            targetPlatform: StandaloneWindows64
-          - platform: android
-            targetPlatform: Android
-
-    # Respect platform selector
-    if: >
-      github.event.inputs.platform == 'all' ||
-      github.event.inputs.platform == matrix.platform
+        config:
+          - { targetPlatform: "StandaloneWindows64", profilePath: "Assets/Settings/Build Profiles/windows-rel.asset", label: "windows-rel" }
+          - { targetPlatform: "StandaloneWindows64", profilePath: "Assets/Settings/Build Profiles/windows-dev.asset", label: "windows-dev" }
+          - { targetPlatform: "StandaloneLinux64", profilePath: "Assets/Settings/Build Profiles/linux-rel.asset", label: "linux-rel" }
+          - { targetPlatform: "StandaloneLinux64", profilePath: "Assets/Settings/Build Profiles/linux-dev.asset", label: "linux-dev" }
+          - { targetPlatform: "WebGL", profilePath: "Assets/Settings/Build Profiles/web-rel.asset", label: "web-rel" }
+          - { targetPlatform: "WebGL", profilePath: "Assets/Settings/Build Profiles/web-dev.asset", label: "web-dev" }
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          lfs: true
-
-      - name: Cache Unity Library
-        uses: actions/cache@v4
+          fetch-depth: 0
+          lfs: false
+          
+      - name: Cache Library
+        uses: actions/cache@v3
         with:
-          path: ProjectDawn/Library
-          key: Library-${{ matrix.platform }}
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}
+          restore-keys: Library-
 
-      - name: Build ${{ matrix.platform }}
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+
+      - name: Build with Unity (Build Profile)
         uses: game-ci/unity-builder@v4
+        with:
+          projectPath: ${{ env.PROJECT_PATH }}
+          targetPlatform: ${{ matrix.config.targetPlatform }}
+          buildProfile: ${{ matrix.config.profilePath }}
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_BUILDER_DOCKER_USER: "${{ runner.uid }}:${{ runner.gid }}"
+      
+      - uses: actions/upload-artifact@v4
         with:
-          projectPath: ProjectDawn
-          targetPlatform: ${{ matrix.targetPlatform }}
-          buildMethod: >
-            ${{ matrix.platform == 'windows'
-                && 'CIBuilder.BuildWindows'
-                || 'CIBuilder.BuildAndroid' }}
-          docker: false
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.platform }}
+          name: android
           path: ProjectDawn/Builds/
 
 # ==================================================
-# RELEASE
+# RELEASE (NO UNITY, NO SELF-HOSTED)
 # ==================================================
   release:
-    needs: [version, build]
-    runs-on: ubuntu-latest
+    needs: [version, buildForAllSupportedPlatforms]
+    runs-on: [self-hosted, linux, x64]
     if: always()
 
     steps:
