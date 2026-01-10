@@ -1,0 +1,253 @@
+name: Build project
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write 
+
+concurrency:
+  group: unity-build
+  cancel-in-progress: false
+
+env:
+  PROJECT_NAME: project_name
+  UNITY_VERSION: 6000.0.62f1
+  PROJECT_PATH: unity_project
+
+jobs:
+  buildForAllSupportedPlatforms:
+    name: Building ${{ matrix.config.label }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      max-parallel: 6 # 6 builds at once 
+      matrix:
+        config:
+          - { targetPlatform: "StandaloneWindows64", profilePath: "Assets/Settings/Build Profiles/windows-rel.asset", label: "windows-rel" }
+          - { targetPlatform: "StandaloneWindows64", profilePath: "Assets/Settings/Build Profiles/windows-dev.asset", label: "windows-dev" }
+          - { targetPlatform: "StandaloneLinux64", profilePath: "Assets/Settings/Build Profiles/linux-rel.asset", label: "linux-rel" }
+          - { targetPlatform: "StandaloneLinux64", profilePath: "Assets/Settings/Build Profiles/linux-dev.asset", label: "linux-dev" }
+          - { targetPlatform: "WebGL", profilePath: "Assets/Settings/Build Profiles/web-rel.asset", label: "web-rel" }
+          - { targetPlatform: "WebGL", profilePath: "Assets/Settings/Build Profiles/web-dev.asset", label: "web-dev" }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: false
+          
+      - name: Cache Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}
+          restore-keys: Library-
+
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+
+      - name: Determine version
+        id: version
+        run: |
+          git fetch --tags
+          last_tag=$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          echo "Last tag: $last_tag"
+          
+          current_branch=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+          echo "Current branch: $current_branch"
+          
+          if [[ -z "$last_tag" ]]; then
+            last_tag="v0.0.0"
+          fi
+          
+          if [[ "$current_branch" == "main" ]]; then
+            base=${last_tag%.*}
+            minor=${last_tag##*.}
+            next_tag="${base}.$((minor + 1))"
+          else
+            clean_branch=$(echo "$current_branch" | sed 's/[^a-zA-Z0-9._-]/-/g')
+            next_tag="${last_tag}-${clean_branch}"
+          fi
+          
+          # Remove 'v' prefix for Unity version
+          unity_version="${next_tag#v}"
+          
+          echo "Next tag: $next_tag"
+          echo "Unity version: $unity_version"
+          echo "tag=$next_tag" >> $GITHUB_OUTPUT
+          echo "unity_version=$unity_version" >> $GITHUB_OUTPUT
+
+      - name: Update Unity project version
+        run: |
+          sed -i "s/bundleVersion: .*/bundleVersion: ${{ steps.version.outputs.unity_version }}/" ${{ env.PROJECT_PATH }}/ProjectSettings/ProjectSettings.asset
+          echo "Saved Project Settings:"
+            cat ${{ env.PROJECT_PATH }}/ProjectSettings/ProjectSettings.asset
+
+      - name: Update Unity project name
+        run: |
+          sed -i "s/productName: .*/productName: ${{ env.PROJECT_NAME }}/" ${{ env.PROJECT_PATH }}/ProjectSettings/ProjectSettings.asset
+          echo "Saved Project Settings:"
+            cat ${{ env.PROJECT_PATH }}/ProjectSettings/ProjectSettings.asset
+      
+      - name: Update JSON data 
+        run: |
+          commit_sha=$(git rev-parse HEAD)
+          mkdir -p ${{ env.PROJECT_PATH }}/Assets/Scripts/Versioning
+          jq -n \
+            --arg commit "$commit_sha" \
+            '{commit: $commit}' \
+            > ${{ env.PROJECT_PATH }}/Assets/Data/data.json
+            echo "Saved data.json:"
+            cat ${{ env.PROJECT_PATH }}/Assets/Data/data.json
+
+      - name: Build with Unity (Build Profile)
+        uses: game-ci/unity-builder@v4
+        with:
+          projectPath: ${{ env.PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: ${{ matrix.config.targetPlatform }}
+          buildProfile: ${{ matrix.config.profilePath }}
+          versioning: None
+          customParameters: -logFile -
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      
+      - name: Zip the build
+        run: |
+          mkdir -p temp/${{ env.PROJECT_NAME }}
+          cp -r build/${{ matrix.config.targetPlatform }}/* temp/${{ env.PROJECT_NAME }}/
+      
+          # Windows-specific renaming
+          if [[ "${{ matrix.config.targetPlatform }}" == "StandaloneWindows64" ]]; then
+            # Rename .exe file if it's not already named correctly
+            exe_path=$(find temp/${{ env.PROJECT_NAME }} -maxdepth 1 -type f -name '*.exe' ! -name '${{ env.PROJECT_NAME }}.exe' | head -n 1)
+            if [[ -n "$exe_path" ]]; then
+              mv "$exe_path" temp/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}.exe
+            fi
+      
+            # Rename _Data folder if it's not already named correctly
+            data_folder=$(find temp/${{ env.PROJECT_NAME }} -maxdepth 1 -type d -name '*_Data' ! -name '${{ env.PROJECT_NAME }}_Data' | head -n 1)
+            if [[ -n "$data_folder" ]]; then
+              mv "$data_folder" temp/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}_Data
+            fi
+            
+            # Rename _BurstDebugInformation_DoNotShip folder if it's not already named correctly
+            burst_folder=$(find temp/${{ env.PROJECT_NAME }} -maxdepth 1 -type d -name '*_BurstDebugInformation_DoNotShip' ! -name '${{ env.PROJECT_NAME }}_BurstDebugInformation_DoNotShip' | head -n 1)
+            if [[ -n "$burst_folder" ]]; then
+              mv "$burst_folder" temp/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}_BurstDebugInformation_DoNotShip
+            fi
+          fi
+      
+          cd temp
+          zip -r ../${{ env.PROJECT_NAME }}-${{ matrix.config.label }}.zip ${{ env.PROJECT_NAME }}
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.config.label }}
+          path: ${{ env.PROJECT_NAME }}-${{ matrix.config.label }}.zip
+          retention-days: 1
+
+  generateChangelog:
+    name: Generate Changelog
+    runs-on: ubuntu-22.04
+    needs: buildForAllSupportedPlatforms
+    outputs:
+      version: ${{ steps.version.outputs.tag }}
+      changelog: ${{ steps.changelog.outputs.content }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+  
+      - name: Determine next version tag
+        id: version
+        run: |
+          git fetch --tags
+          last_tag=$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          echo "Last tag: $last_tag"
+          
+          current_branch=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+          echo "Current branch: $current_branch"
+          
+          if [[ -z "$last_tag" ]]; then
+            last_tag="v0.0.0"
+          fi
+          
+          if [[ "$current_branch" == "main" ]]; then
+            base=${last_tag%.*}
+            minor=${last_tag##*.}
+            next_tag="${base}.$((minor + 1))"
+          else
+            clean_branch=$(echo "$current_branch" | sed 's/[^a-zA-Z0-9._-]/-/g')
+            next_tag="${last_tag}-${clean_branch}"
+          fi
+          
+          echo "Next tag: $next_tag"
+          echo "tag=$next_tag" >> $GITHUB_OUTPUT
+  
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "Comparing commits from ${{ github.event.before }} to ${{ github.sha }}"
+      
+          last_tag=$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          if [ -z "$last_tag" ]; then
+            last_tag="(none)"
+          fi
+      
+          changelog=$(git log ${{ github.event.before }}..${{ github.sha }} --pretty=format:'**%h** - %s%n%b%n' --reverse)
+      
+          if [ -z "$changelog" ]; then
+            changelog="No new commits in this push."
+          fi
+      
+          # Output for GitHub release (keep formatting)
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$changelog" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Also create Slack-safe version
+          slack_changelog="${changelog//'%'/'%25'}"
+          slack_changelog="${slack_changelog//$'\n'/'\\n'}"
+          slack_changelog="${slack_changelog//$'\r'/'\\r'}"
+          echo "*Changelog (${last_tag}):*\\n$slack_changelog" > changelog.txt
+  
+      - name: Upload changelog artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: changelog.txt
+
+  createRelease:
+    name: Create Release
+    runs-on: ubuntu-22.04
+    needs: generateChangelog
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-*
+          merge-multiple: true
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.generateChangelog.outputs.version }}
+          name: Release ${{ needs.generateChangelog.outputs.version }}
+          body: ${{ needs.generateChangelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+          files: |
+            ${{ env.PROJECT_NAME }}-*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
