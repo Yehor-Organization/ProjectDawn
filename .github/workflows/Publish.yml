@@ -23,21 +23,26 @@ on:
 
 jobs:
 # ==================================================
-# VERSION BUMP (NO UNITY, NO SELF-HOSTED)
+# VERSION BUMP (SINGLE SOURCE OF TRUTH)
 # ==================================================
   version:
+    name: Version bump
     runs-on: [self-hosted, linux, x64]
+
     outputs:
       new_version: ${{ steps.bump.outputs.version }}
       bumped: ${{ steps.bump.outputs.bumped }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Bump Unity bundleVersion
         id: bump
         run: |
           FILE="ProjectDawn/ProjectSettings/ProjectSettings.asset"
+
           CURRENT=$(grep -m1 "bundleVersion:" "$FILE" | awk '{print $2}')
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 
@@ -58,8 +63,8 @@ jobs:
             sed -i "s/bundleVersion:.*/bundleVersion: $NEW/" "$FILE"
           fi
 
-          echo "version=$NEW" >> $GITHUB_OUTPUT
-          echo "bumped=$BUMPED" >> $GITHUB_OUTPUT
+          echo "version=$NEW" >> "$GITHUB_OUTPUT"
+          echo "bumped=$BUMPED" >> "$GITHUB_OUTPUT"
 
       - name: Commit version bump
         if: steps.bump.outputs.bumped == 'true'
@@ -73,8 +78,8 @@ jobs:
 # ==================================================
 # WINDOWS BUILD
 # ==================================================
-
   windows:
+    name: Build Windows
     needs: version
     if: github.event.inputs.platform != 'android'
     runs-on: [self-hosted, linux, x64]
@@ -82,11 +87,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           lfs: true
 
-      - name: Reset Unity Library (avoid permission issues)
+      - name: Hard clean Unity workspace
         run: |
           rm -rf ProjectDawn/Library
+          rm -rf ProjectDawn/Temp
+          rm -rf ProjectDawn/Obj
+          rm -rf ProjectDawn/Logs
+
+      - name: Clean Unity Builder cache
+        run: |
+          rm -rf ~/.cache/unity3d
+          rm -rf ~/.cache/game-ci
 
       - uses: game-ci/unity-builder@v4
         env:
@@ -103,18 +117,28 @@ jobs:
 # ANDROID BUILD
 # ==================================================
   android:
-    needs: windows
+    name: Build Android
+    needs: version
     if: github.event.inputs.platform != 'windows'
     runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           lfs: true
 
-      - name: Reset Unity Library (avoid permission issues)
+      - name: Hard clean Unity workspace
         run: |
           rm -rf ProjectDawn/Library
+          rm -rf ProjectDawn/Temp
+          rm -rf ProjectDawn/Obj
+          rm -rf ProjectDawn/Logs
+
+      - name: Clean Unity Builder cache
+        run: |
+          rm -rf ~/.cache/unity3d
+          rm -rf ~/.cache/game-ci
 
       - uses: game-ci/unity-builder@v4
         env:
@@ -127,14 +151,14 @@ jobs:
           buildMethod: CIBuilder.BuildAndroid
           docker: false
 
-
 # ==================================================
-# RELEASE (NO UNITY, NO SELF-HOSTED)
+# RELEASE (NO UNITY)
 # ==================================================
   release:
+    name: Create Release
     needs: [version, windows, android]
-    runs-on: [self-hosted, linux, x64]
     if: always()
+    runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/download-artifact@v4
@@ -149,3 +173,5 @@ jobs:
           files: |
             dist/windows/**
             dist/android/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
